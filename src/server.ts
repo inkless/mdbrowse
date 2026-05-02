@@ -7,6 +7,7 @@ import type MarkdownIt from "markdown-it";
 import mime from "mime-types";
 import open from "open";
 import { escapeHtml, type LayoutValues, renderLayout } from "./layout.js";
+import { attachLiveReload, type LiveReloadHandle } from "./live-reload.js";
 import { detectGitHubRepository } from "./plugins/git-remote.js";
 import { createRendererWithHighlighting, type RenderOptions, render } from "./render.js";
 import { renderTree } from "./render-tree.js";
@@ -21,6 +22,12 @@ export interface ServeOptions {
   browser?: boolean;
   /** Wrap content in the GitHub bounding box. Default true. */
   boundingBox?: boolean;
+  /**
+   * Enable live reload — `chokidar` watches `directory`, a websocket
+   * broadcasts `"reload"` on changes, and rendered pages get a small
+   * client snippet injected. Default true.
+   */
+  reload?: boolean;
   /**
    * Directory served at `/`. Defaults to `process.cwd()`. The Markdown file
    * given on the command line is resolved relative to this directory.
@@ -70,6 +77,7 @@ export async function serveMarkdown(
   const directory = resolve(options.directory ?? process.cwd());
   const boundingBox = options.boundingBox ?? true;
   const browser = options.browser ?? true;
+  const reloadEnabled = options.reload ?? true;
   const repository = options.repository ?? detectGitHubRepository(directory);
 
   const md = await createRendererWithHighlighting({
@@ -77,8 +85,9 @@ export async function serveMarkdown(
     repository,
   });
 
+  let live: LiveReloadHandle | null = null;
   const server = createServer((req, res) => {
-    handle(req, res, directory, md, boundingBox).catch((err) => {
+    handle(req, res, directory, md, boundingBox, live).catch((err) => {
       console.error("[mdgrip] handler error:", err);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "text/plain" });
@@ -94,6 +103,10 @@ export async function serveMarkdown(
       ok();
     });
   });
+
+  if (reloadEnabled) {
+    live = attachLiveReload(server, directory);
+  }
 
   // When port=0, server.listen picks a free port — read the actual one.
   const addr = server.address();
@@ -112,13 +125,21 @@ export async function serveMarkdown(
   }
 
   console.log(`🚀 Starting server: ${url}`);
+  if (reloadEnabled) {
+    console.log("📡 Auto-reload enabled. Files will trigger browser refresh.");
+  } else {
+    console.log("🔄 Auto-reload disabled. Use F5 to manually refresh.");
+  }
   if (browser) {
     open(url).catch((e) => console.error("❌ Error opening browser:", e));
   }
 
   return {
     url,
-    close: () => closeServer(server),
+    async close(): Promise<void> {
+      if (live) await live.close();
+      await closeServer(server);
+    },
   };
 }
 
@@ -134,6 +155,7 @@ async function handle(
   directory: string,
   md: MarkdownIt,
   boundingBox: boolean,
+  live: LiveReloadHandle | null,
 ): Promise<void> {
   const urlPath = decodeURIComponent((req.url ?? "/").split("?", 1)[0] ?? "/");
 
@@ -160,7 +182,7 @@ async function handle(
   }
 
   if (info.isFile() && MD_RE.test(filePath)) {
-    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath);
+    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath, live);
   }
 
   if (info.isDirectory()) {
@@ -179,6 +201,7 @@ async function serveMarkdownFile(
   boundingBox: boolean,
   directory: string,
   currentUrlPath: string,
+  live: LiveReloadHandle | null,
 ): Promise<void> {
   const source = await readFile(filePath, "utf8");
   const { html, title } = render(md, source);
@@ -197,7 +220,8 @@ async function serveMarkdownFile(
     FileExplorer: explorer,
     BoundingBox: boundingBox,
   };
-  const out = renderLayout(values);
+  let out = renderLayout(values);
+  if (live) out = live.injectInto(out);
 
   setNoCacheHeaders(res);
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });

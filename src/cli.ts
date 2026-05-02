@@ -41,14 +41,12 @@ export function createProgram(): Command {
     .option("--no-bounding-box", "Disable bounding box")
     .option("--no-reload", "Disable browser auto-reload on file changes")
     .action(async (file: string | undefined, opts: ServeCliOptions) => {
-      // --no-reload is parsed and stored on opts.reload, but live reload
-      // hasn't been wired yet (Phase 6). Acknowledge silently for now.
-      void opts.reload;
       await serveMarkdown(file ?? null, {
         host: opts.host,
         port: opts.port,
         browser: opts.browser,
         boundingBox: opts.boundingBox,
+        reload: opts.reload,
       });
     });
 
