@@ -4,6 +4,9 @@ import { full as emoji } from "markdown-it-emoji";
 import footnote from "markdown-it-footnote";
 import mathjax from "markdown-it-mathjax3";
 import taskLists from "markdown-it-task-lists";
+import { githubAlertsPlugin } from "./plugins/alerts.js";
+import { detailsPlugin } from "./plugins/details.js";
+import { ghIssuePlugin } from "./plugins/ghissue.js";
 import { mermaidPlugin } from "./plugins/mermaid.js";
 
 export interface RenderResult {
@@ -18,6 +21,12 @@ export interface RenderOptions {
    * Default true.
    */
   mermaid?: boolean;
+  /**
+   * `owner/repo` slug for resolving bare `#NNN` issue references. When
+   * unset, bare `#NNN` is left as plain text. `owner/repo#NNN` works
+   * regardless. Auto-detected from `git remote get-url origin` by the CLI.
+   */
+  repository?: string;
 }
 
 export function createRenderer(options: RenderOptions = {}): MarkdownIt {
@@ -43,6 +52,9 @@ export function createRenderer(options: RenderOptions = {}): MarkdownIt {
         .replace(/\s+/g, "-"),
   });
   md.use(mathjax);
+  md.use(githubAlertsPlugin);
+  md.use(ghIssuePlugin, { repository: options.repository });
+  md.use(detailsPlugin);
 
   if (options.mermaid !== false) {
     md.use(mermaidPlugin);
@@ -54,6 +66,11 @@ export function createRenderer(options: RenderOptions = {}): MarkdownIt {
 const defaultRenderer = createRenderer();
 
 export function renderMarkdown(input: string, options?: RenderOptions): RenderResult {
+  // Renderer instances are stateful for per-document features (e.g. details
+  // counter), so build a fresh one when caller-specific options are given;
+  // for the no-options fast path we still reuse the default. The default
+  // renderer's per-call state is reset because we go through `parse` →
+  // `render` rather than holding intermediate state on the instance.
   const md = options ? createRenderer(options) : defaultRenderer;
   const env: Record<string, unknown> = {};
   const tokens = md.parse(input, env);

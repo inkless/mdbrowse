@@ -32,8 +32,9 @@ describe("renderMarkdown — core", () => {
   });
 
   it("passes through raw HTML (html: true)", () => {
+    // The details plugin auto-injects an id; assert on the open-tag prefix.
     const { html } = renderMarkdown("<details><summary>x</summary>y</details>");
-    expect(html).toContain("<details>");
+    expect(html).toMatch(/<details[\s>]/);
     expect(html).toContain("<summary>x</summary>");
   });
 });
