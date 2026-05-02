@@ -9,6 +9,8 @@ import open from "open";
 import { escapeHtml, type LayoutValues, renderLayout } from "./layout.js";
 import { detectGitHubRepository } from "./plugins/git-remote.js";
 import { createRendererWithHighlighting, type RenderOptions, render } from "./render.js";
+import { renderTree } from "./render-tree.js";
+import { buildTree } from "./tree.js";
 
 export interface ServeOptions {
   /** Host to bind. Defaults to `localhost`. */
@@ -158,7 +160,7 @@ async function handle(
   }
 
   if (info.isFile() && MD_RE.test(filePath)) {
-    return serveMarkdownFile(res, md, filePath, boundingBox);
+    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath);
   }
 
   if (info.isDirectory()) {
@@ -175,15 +177,24 @@ async function serveMarkdownFile(
   md: MarkdownIt,
   filePath: string,
   boundingBox: boolean,
+  directory: string,
+  currentUrlPath: string,
 ): Promise<void> {
   const source = await readFile(filePath, "utf8");
   const { html, title } = render(md, source);
+
+  let explorer = "";
+  try {
+    explorer = renderTree(buildTree(directory), currentUrlPath);
+  } catch {
+    // tree build can fail on permissions / racy fs — degrade silently
+  }
 
   const fallbackTitle = filePath.split(/[\\/]/).pop()?.replace(MD_RE, "") ?? "";
   const values: LayoutValues = {
     Title: escapeHtml(title || fallbackTitle),
     Content: html,
-    FileExplorer: "",
+    FileExplorer: explorer,
     BoundingBox: boundingBox,
   };
   const out = renderLayout(values);
