@@ -7,6 +7,11 @@ import taskLists from "markdown-it-task-lists";
 import { githubAlertsPlugin } from "./plugins/alerts.js";
 import { detailsPlugin } from "./plugins/details.js";
 import { ghIssuePlugin } from "./plugins/ghissue.js";
+import {
+  attachHighlighter,
+  buildHighlighter,
+  type HighlighterOptions,
+} from "./plugins/highlight.js";
 import { mermaidPlugin } from "./plugins/mermaid.js";
 
 export interface RenderResult {
@@ -64,6 +69,43 @@ export function createRenderer(options: RenderOptions = {}): MarkdownIt {
 }
 
 const defaultRenderer = createRenderer();
+
+/**
+ * Build a renderer with shiki syntax highlighting wired up. Use the
+ * returned instance directly with `renderHtml`/`renderTokens`.
+ *
+ * Building the highlighter is async and not free — call this once at
+ * startup and reuse the result across many renders.
+ */
+export async function createRendererWithHighlighting(
+  options: RenderOptions & HighlighterOptions = {},
+): Promise<MarkdownIt> {
+  const md = createRenderer(options);
+  const highlighter = await buildHighlighter(options);
+  attachHighlighter(md, highlighter, options);
+  return md;
+}
+
+/**
+ * One-shot render with shiki highlighting. Builds a highlighter on every
+ * call — convenient for ad-hoc use, but for repeated rendering prefer
+ * `createRendererWithHighlighting()` + `render(md, input)`.
+ */
+export async function renderMarkdownWithHighlighting(
+  input: string,
+  options?: RenderOptions & HighlighterOptions,
+): Promise<RenderResult> {
+  const md = await createRendererWithHighlighting(options ?? {});
+  return render(md, input);
+}
+
+export function render(md: MarkdownIt, input: string): RenderResult {
+  const env: Record<string, unknown> = {};
+  const tokens = md.parse(input, env);
+  const html = md.renderer.render(tokens, md.options, env);
+  const title = firstH1(tokens);
+  return { html, title };
+}
 
 export function renderMarkdown(input: string, options?: RenderOptions): RenderResult {
   // Renderer instances are stateful for per-document features (e.g. details
