@@ -1,7 +1,9 @@
 name: Release
 
 # Triggered by pushing a tag like `v0.1.0`. The version in package.json must
-# match the tag (without the `v` prefix). Set NPM_TOKEN as a repo secret.
+# match the tag (without the `v` prefix). Authenticates to npm via Trusted
+# Publishing (OIDC) — configure on npmjs.com under the package's Settings →
+# Trusted Publisher. No NPM_TOKEN secret needed.
 on:
   push:
     tags:
@@ -40,8 +42,6 @@ jobs:
       - run: pnpm build
 
       - run: pnpm publish --access public --provenance --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
