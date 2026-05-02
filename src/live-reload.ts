@@ -2,7 +2,7 @@ import type { Server } from "node:http";
 import chokidar, { type FSWatcher } from "chokidar";
 import { type WebSocket, WebSocketServer } from "ws";
 
-const WS_PATH = "/__mdgrip_livereload";
+const WS_PATH = "/__mdbrowse_livereload";
 
 /**
  * Client snippet served inline in every rendered HTML page when live

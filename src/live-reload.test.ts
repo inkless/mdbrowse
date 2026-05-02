@@ -9,7 +9,7 @@ let dir: string;
 let handle: ServerHandle;
 
 beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), "mdgrip-live-"));
+  dir = mkdtempSync(join(tmpdir(), "mdbrowse-live-"));
   writeFileSync(join(dir, "README.md"), "# v1\n");
   handle = await serveMarkdown(null, {
     directory: dir,
@@ -28,13 +28,13 @@ describe("live reload", () => {
   it("injects the client snippet when reload is enabled", async () => {
     const res = await fetch(handle.url);
     const body = await res.text();
-    expect(body).toContain("__mdgrip_livereload");
+    expect(body).toContain("__mdbrowse_livereload");
     expect(body).toContain("location.reload");
   });
 
   it("broadcasts reload over the websocket on file change", async () => {
     const wsUrl = handle.url.replace(/^http/, "ws").replace(/README\.md$/, "");
-    const ws = new WebSocket(`${wsUrl}__mdgrip_livereload`);
+    const ws = new WebSocket(`${wsUrl}__mdbrowse_livereload`);
 
     await new Promise<void>((ok, fail) => {
       ws.on("open", () => ok());
@@ -72,6 +72,6 @@ describe("live reload disabled", () => {
     });
     const res = await fetch(handle.url);
     const body = await res.text();
-    expect(body).not.toContain("__mdgrip_livereload");
+    expect(body).not.toContain("__mdbrowse_livereload");
   });
 });

@@ -8,7 +8,7 @@ let tmp: string;
 let handle: ServerHandle;
 
 beforeAll(async () => {
-  tmp = mkdtempSync(join(tmpdir(), "mdgrip-server-"));
+  tmp = mkdtempSync(join(tmpdir(), "mdbrowse-server-"));
   writeFileSync(join(tmp, "README.md"), "# hello\n\nbody with `#42` and ```js\nconst x = 1\n```\n");
   writeFileSync(join(tmp, "image.txt"), "not markdown");
   // Bind to port 0 so the OS picks a free port — avoids flaky CI on 6419.

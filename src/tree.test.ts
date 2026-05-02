@@ -8,7 +8,7 @@ import { buildTree, type TreeNode } from "./tree.js";
 let dir: string;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "mdgrip-tree-"));
+  dir = mkdtempSync(join(tmpdir(), "mdbrowse-tree-"));
 });
 
 afterEach(() => {

@@ -88,7 +88,7 @@ export async function serveMarkdown(
   let live: LiveReloadHandle | null = null;
   const server = createServer((req, res) => {
     handle(req, res, directory, md, boundingBox, live).catch((err) => {
-      console.error("[mdgrip] handler error:", err);
+      console.error("[mdbrowse] handler error:", err);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "text/plain" });
       }

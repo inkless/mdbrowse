@@ -1,30 +1,30 @@
-# mdgrip
+# mdbrowse
 
 Render Markdown files locally with the look of GitHub. **No GitHub API calls** — everything renders in-process.
 
-`mdgrip` is a Node.js port of [`go-grip`](https://github.com/inkless/go-grip), which is itself a Go port of [`grip`](https://github.com/joeyespo/grip). Same UX, same output, distributed as an npm package so it works with `npx` / `pnpm dlx` / global install — no Go toolchain required.
+`mdbrowse` is a Node.js port of [`go-grip`](https://github.com/inkless/go-grip), which is itself a Go port of [`grip`](https://github.com/joeyespo/grip). Same UX, same output, distributed as an npm package so it works with `npx` / `pnpm dlx` / global install — no Go toolchain required.
 
 ## Install
 
 ```bash
 # global
-pnpm add -g mdgrip
-npm i -g mdgrip
+pnpm add -g mdbrowse
+npm i -g mdbrowse
 
 # one-shot, no install
-pnpm dlx mdgrip README.md
-npx mdgrip README.md
+pnpm dlx mdbrowse README.md
+npx mdbrowse README.md
 ```
 
 ## Usage
 
 ```bash
-mdgrip                       # serve ./README.md if present, otherwise the dir
-mdgrip docs/guide.md         # serve a specific file
-mdgrip -p 3000 README.md     # custom port
-mdgrip --no-browser          # don't auto-open the browser
-mdgrip --no-reload           # disable live reload on file changes
-mdgrip -H 0.0.0.0 README.md  # bind to all interfaces
+mdbrowse                       # serve ./README.md if present, otherwise the dir
+mdbrowse docs/guide.md         # serve a specific file
+mdbrowse -p 3000 README.md     # custom port
+mdbrowse --no-browser          # don't auto-open the browser
+mdbrowse --no-reload           # disable live reload on file changes
+mdbrowse -H 0.0.0.0 README.md  # bind to all interfaces
 ```
 
 The default URL is `http://localhost:6419/<file>`. Hit **Ctrl-C** to stop.
@@ -32,7 +32,7 @@ The default URL is `http://localhost:6419/<file>`. Hit **Ctrl-C** to stop.
 ### CLI reference
 
 ```
-mdgrip [options] [file]
+mdbrowse [options] [file]
 
 Arguments:
   file                  Markdown file to render (defaults to README.md if present)
@@ -66,10 +66,10 @@ Options:
 
 ## Programmatic API
 
-`mdgrip` is also a library:
+`mdbrowse` is also a library:
 
 ```ts
-import { renderMarkdown, renderMarkdownWithHighlighting, serveMarkdown } from "mdgrip";
+import { renderMarkdown, renderMarkdownWithHighlighting, serveMarkdown } from "mdbrowse";
 
 // Sync render, no syntax highlighting (fastest):
 const { html, title } = renderMarkdown("# hello\n");
@@ -90,7 +90,7 @@ await handle.close();
 For repeated rendering (e.g. inside a long-running server), build the renderer once:
 
 ```ts
-import { createRendererWithHighlighting, render } from "mdgrip";
+import { createRendererWithHighlighting, render } from "mdbrowse";
 const md = await createRendererWithHighlighting();
 for (const doc of docs) {
   const { html } = render(md, doc);
@@ -108,13 +108,13 @@ renderMarkdown(md, { repository: "octocat/hello-world" });
 
 ## Why
 
-The original `grip` calls the GitHub Markdown API. `go-grip` removes that dependency by rendering everything in-process. `mdgrip` is the same idea in the Node.js ecosystem — same output as `go-grip` (octicon SVGs in alerts, identical file-tree HTML, GitHub-style CSS), but installable with the JS toolchain you already have.
+The original `grip` calls the GitHub Markdown API. `go-grip` removes that dependency by rendering everything in-process. `mdbrowse` is the same idea in the Node.js ecosystem — same output as `go-grip` (octicon SVGs in alerts, identical file-tree HTML, GitHub-style CSS), but installable with the JS toolchain you already have.
 
 ## Development
 
 ```bash
-git clone https://github.com/guangda-zhang/mdviewer
-cd mdviewer
+git clone https://github.com/guangda-zhang/mdbrowse
+cd mdbrowse
 pnpm install
 
 pnpm dev          # tsup watch

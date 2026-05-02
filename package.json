@@ -1,5 +1,5 @@
 {
-  "name": "mdgrip",
+  "name": "mdbrowse",
   "version": "0.0.0",
   "description": "Render Markdown files locally with the look of GitHub. A Node.js port of go-grip / grip — no GitHub API calls, fully offline.",
   "keywords": [
@@ -16,20 +16,20 @@
   ],
   "license": "MIT",
   "author": "Guangda Zhang",
-  "homepage": "https://github.com/guangda-zhang/mdviewer#readme",
+  "homepage": "https://github.com/guangda-zhang/mdbrowse#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/guangda-zhang/mdviewer.git"
+    "url": "git+https://github.com/guangda-zhang/mdbrowse.git"
   },
   "bugs": {
-    "url": "https://github.com/guangda-zhang/mdviewer/issues"
+    "url": "https://github.com/guangda-zhang/mdbrowse/issues"
   },
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "bin": {
-    "mdgrip": "./dist/cli.js"
+    "mdbrowse": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
