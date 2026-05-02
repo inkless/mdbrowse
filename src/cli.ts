@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
+import { serveMarkdown } from "./server.js";
 
 interface PackageJson {
   name: string;
@@ -11,9 +12,16 @@ interface PackageJson {
 
 function readPackageJson(): PackageJson {
   const here = dirname(fileURLToPath(import.meta.url));
-  // dist/cli.js → ../package.json
   const pkgPath = resolve(here, "..", "package.json");
   return JSON.parse(readFileSync(pkgPath, "utf8")) as PackageJson;
+}
+
+interface ServeCliOptions {
+  browser: boolean;
+  host: string;
+  port: number;
+  boundingBox: boolean;
+  reload: boolean;
 }
 
 export function createProgram(): Command {
@@ -32,29 +40,19 @@ export function createProgram(): Command {
     .option("--bounding-box", "Wrap content in GitHub bounding box", true)
     .option("--no-bounding-box", "Disable bounding box")
     .option("--no-reload", "Disable browser auto-reload on file changes")
-    .action(async (file: string | undefined, opts: ServeOptions) => {
-      // Phase 4 will wire this to the server. For now, print the parsed config.
-      const config = {
-        file: file ?? null,
+    .action(async (file: string | undefined, opts: ServeCliOptions) => {
+      // --no-reload is parsed and stored on opts.reload, but live reload
+      // hasn't been wired yet (Phase 6). Acknowledge silently for now.
+      void opts.reload;
+      await serveMarkdown(file ?? null, {
         host: opts.host,
         port: opts.port,
         browser: opts.browser,
         boundingBox: opts.boundingBox,
-        reload: opts.reload,
-      };
-      console.log("mdgrip configured:", JSON.stringify(config, null, 2));
-      console.log("(server not yet implemented — see PLAN.md Phase 4)");
+      });
     });
 
   return program;
-}
-
-interface ServeOptions {
-  browser: boolean;
-  host: string;
-  port: number;
-  boundingBox: boolean;
-  reload: boolean;
 }
 
 createProgram().parseAsync(process.argv);

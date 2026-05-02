@@ -6,13 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!**/dist",
-      "!**/node_modules",
-      "!**/src/assets/static/js",
-      "!**/src/assets/static/emojis"
-    ]
+    "includes": ["**", "!**/dist", "!**/node_modules", "!**/src/assets"]
   },
   "formatter": {
     "enabled": true,

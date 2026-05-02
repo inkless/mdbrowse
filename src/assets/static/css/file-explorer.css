@@ -1,0 +1,237 @@
+/* Theme variables. Each scope redefines the active palette so rules
+   below only have to reference `var(--explorer-foo)` once. Order:
+   default light  →  @media dark (OS prefers dark)  →  [data-theme="dark"]
+   (user toggled dark)  →  [data-theme="light"] (user toggled light, must
+   beat the media-query when OS is dark). */
+:root {
+  --explorer-width: 260px;
+
+  --explorer-bg: #f6f8fa;
+  --explorer-border: #d0d7de;
+  --explorer-text: #1f2328;
+  --explorer-hover: #eaeef2;
+  --explorer-current-bg: #ddf4ff;
+  --explorer-current-fg: #0969da;
+  --explorer-toggle-border: #d0d7de;
+  --explorer-toggle-fg: #656d76;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --explorer-bg: #161b22;
+    --explorer-border: #30363d;
+    --explorer-text: #e6edf3;
+    --explorer-hover: #21262d;
+    --explorer-current-bg: #1f2d3d;
+    --explorer-current-fg: #58a6ff;
+    --explorer-toggle-border: #484f58;
+    --explorer-toggle-fg: #8b949e;
+  }
+}
+
+[data-theme="dark"] {
+  --explorer-bg: #161b22;
+  --explorer-border: #30363d;
+  --explorer-text: #e6edf3;
+  --explorer-hover: #21262d;
+  --explorer-current-bg: #1f2d3d;
+  --explorer-current-fg: #58a6ff;
+  --explorer-toggle-border: #484f58;
+  --explorer-toggle-fg: #8b949e;
+}
+
+[data-theme="light"] {
+  --explorer-bg: #f6f8fa;
+  --explorer-border: #d0d7de;
+  --explorer-text: #1f2328;
+  --explorer-hover: #eaeef2;
+  --explorer-current-bg: #ddf4ff;
+  --explorer-current-fg: #0969da;
+  --explorer-toggle-border: #d0d7de;
+  --explorer-toggle-fg: #656d76;
+}
+
+/* While the page is in its initial paint, suppress transitions so the
+   sidebar (and theme) snap straight to their persisted state instead of
+   animating from a default on every navigation. The `preload` class is
+   added by an inline script in <head> and removed by file-explorer.js
+   on the next animation frame. */
+html.preload .file-explorer,
+html.preload .explorer-backdrop {
+  transition: none !important;
+}
+
+/* Sidebar shell */
+.file-explorer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--explorer-width);
+  background: var(--explorer-bg);
+  border-right: 1px solid var(--explorer-border);
+  color: var(--explorer-text);
+  overflow-y: auto;
+  z-index: 998;
+  transform: translateX(-100%);
+  transition: transform 0.18s ease-out;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+body.explorer-open .file-explorer {
+  transform: translateX(0);
+}
+
+.file-explorer-header {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 14px 16px 8px;
+  opacity: 0.7;
+}
+
+.file-tree {
+  padding: 0 8px 16px;
+}
+
+/* Override markdown-body list styling that bleeds into the sidebar */
+.file-explorer ul,
+.file-explorer .file-tree-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.file-explorer li {
+  margin: 0;
+  padding: 0;
+}
+.file-explorer details > ul {
+  padding-left: 14px;
+  border-left: 1px dashed var(--explorer-border);
+  margin-left: 8px;
+}
+
+.file-explorer summary {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  background: transparent;
+}
+.file-explorer summary::-webkit-details-marker,
+.file-explorer summary::marker {
+  display: none;
+  content: "";
+}
+.file-explorer summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 6px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  opacity: 0.6;
+  transition: transform 0.12s;
+  transform-origin: 25% 50%;
+}
+.file-explorer details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.file-explorer summary:hover {
+  background: var(--explorer-hover);
+}
+
+.file-explorer a {
+  display: block;
+  padding: 4px 8px 4px 22px;
+  border-radius: 4px;
+  color: var(--explorer-text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-explorer a:hover {
+  background: var(--explorer-hover);
+  text-decoration: none;
+}
+.file-explorer .current > a {
+  background: var(--explorer-current-bg);
+  color: var(--explorer-current-fg);
+  font-weight: 600;
+}
+
+/* Hamburger toggle button */
+.explorer-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: transparent;
+  border: 1px solid var(--explorer-toggle-border);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.explorer-toggle:hover {
+  opacity: 1;
+}
+.explorer-toggle-icon {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--explorer-toggle-fg);
+}
+
+/* Backdrop for mobile overlay */
+.explorer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 997;
+}
+
+/* Desktop: sidebar pushes content. Use padding on body so the container's
+   `margin: 0 auto` keeps the content centered in the remaining space. */
+@media (min-width: 768px) {
+  body.explorer-open {
+    padding-left: var(--explorer-width);
+  }
+  body.explorer-open .explorer-toggle {
+    left: calc(var(--explorer-width) + 20px);
+  }
+}
+
+/* Mobile: sidebar overlays content with backdrop */
+@media (max-width: 767px) {
+  body.explorer-open .explorer-backdrop {
+    display: block;
+  }
+  .file-explorer {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media print {
+  .explorer-toggle,
+  .file-explorer,
+  .explorer-backdrop {
+    display: none !important;
+  }
+}

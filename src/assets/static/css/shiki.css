@@ -1,0 +1,41 @@
+/* Shiki dual-theme bridge.
+   Each highlighted span carries `--shiki-light:#xxx` and `--shiki-dark:#xxx`
+   inline. `defaultColor: false` (in highlight.ts) means shiki does NOT pick
+   a winning theme — the host page does, here:
+
+   - Light by default (covers `data-theme="light"` and the no-attribute case).
+   - Dark when `data-theme="dark"` is set on <body> (theme-switch.js handles
+     persistence and the toggle button).
+   - Falls back to `prefers-color-scheme` when no preference is set yet —
+     the inline-script bootstrap in theme-switch.js applies the attribute
+     pre-paint, so this branch only matters during the very first render
+     before that script runs.
+
+   Variables `--shiki-{light,dark}-bg` are set by shiki on the outermost
+   `<pre class="shiki">`, so the same selectors target both color and bg. */
+
+.shiki,
+.shiki span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+body[data-theme="light"] .shiki,
+body[data-theme="light"] .shiki span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+}
+
+body[data-theme="dark"] .shiki,
+body[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}

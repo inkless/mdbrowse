@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      // Sync — runs before <body> renders. Suppresses transitions until
+      // first paint so the sidebar doesn't animate from off-screen into
+      // its persisted state on every page load.
+      document.documentElement.classList.add("preload");
+    </script>
+    <title>{{ .Title }}</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
+    <link
+      id="theme-light"
+      rel="stylesheet"
+      href="/static/css/github-markdown-light.css"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      id="theme-dark"
+      rel="stylesheet"
+      href="/static/css/github-markdown-dark.css"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link rel="stylesheet" href="/static/css/shiki.css" />
+    <link rel="stylesheet" href="/static/css/github-print.css" media="print" />
+    <link rel="stylesheet" href="/static/css/github-mermaid.css" />
+    <link rel="stylesheet" href="/static/css/github-clipboard.css" />
+    <link rel="stylesheet" href="/static/css/mathjax.css" />
+    <link rel="stylesheet" href="/static/css/theme-switch.css" />
+    <link rel="stylesheet" href="/static/css/width-toggle.css" />
+    <link rel="stylesheet" href="/static/css/file-explorer.css" />
+    <script src="/static/js/theme-switch.js"></script>
+    <script src="/static/js/width-toggle.js"></script>
+    <script src="/static/js/file-explorer.js"></script>
+    <script src="/static/js/clipboard-copy.js"></script>
+    <script src="/static/js/mathjax-options.js"></script>
+    <script src="/static/js/tex-mml-chtml.js"></script>
+    <script src="/static/js/mermaid.min.js"></script>
+    <script src="/static/js/mermaid-init.js"></script>
+  </head>
+
+  <body>
+    {{if .FileExplorer}}
+    <button id="explorer-toggle" class="explorer-toggle" title="Toggle file explorer" aria-label="Toggle file explorer">
+      <span class="explorer-toggle-icon">☰</span>
+    </button>
+    <aside id="file-explorer" class="file-explorer">
+      <div class="file-explorer-header">Files</div>
+      <nav class="file-tree">{{ .FileExplorer }}</nav>
+    </aside>
+    <div id="explorer-backdrop" class="explorer-backdrop"></div>
+    {{end}}
+    <button id="width-toggle" class="width-toggle" title="Toggle width">
+      <span class="width-toggle-icon"></span>
+    </button>
+    <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
+      <span class="theme-toggle-icon"></span>
+    </button>
+    <div class="container">
+      <div class="markdown-body{{if .BoundingBox}} container-inner{{end}}">
+        {{ .Content }}
+      </div>
+    </div>
+  </body>
+</html>
