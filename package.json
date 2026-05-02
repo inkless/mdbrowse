@@ -16,13 +16,13 @@
   ],
   "license": "MIT",
   "author": "Guangda Zhang",
-  "homepage": "https://github.com/guangda-zhang/mdbrowse#readme",
+  "homepage": "https://github.com/inkless/mdbrowse#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/guangda-zhang/mdbrowse.git"
+    "url": "git+https://github.com/inkless/mdbrowse.git"
   },
   "bugs": {
-    "url": "https://github.com/guangda-zhang/mdbrowse/issues"
+    "url": "https://github.com/inkless/mdbrowse/issues"
   },
   "type": "module",
   "engines": {

@@ -113,7 +113,7 @@ The original `grip` calls the GitHub Markdown API. `go-grip` removes that depend
 ## Development
 
 ```bash
-git clone https://github.com/guangda-zhang/mdbrowse
+git clone git@github.com:inkless/mdbrowse.git
 cd mdbrowse
 pnpm install
 
