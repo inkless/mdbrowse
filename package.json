@@ -1,0 +1,69 @@
+{
+  "name": "mdgrip",
+  "version": "0.0.0",
+  "description": "Render Markdown files locally with the look of GitHub. A Node.js port of go-grip / grip — no GitHub API calls, fully offline.",
+  "keywords": [
+    "markdown",
+    "grip",
+    "github",
+    "preview",
+    "viewer",
+    "cli",
+    "readme",
+    "mermaid",
+    "shiki",
+    "live-reload"
+  ],
+  "license": "MIT",
+  "author": "Guangda Zhang",
+  "homepage": "https://github.com/guangda-zhang/mdviewer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guangda-zhang/mdviewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/guangda-zhang/mdviewer/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "mdgrip": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build && pnpm test && pnpm lint"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.14",
+    "@types/node": "^25.6.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "commander": "^14.0.3"
+  }
+}
