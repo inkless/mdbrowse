@@ -1,8 +1,18 @@
 # mdbrowse
 
-Render Markdown files locally with the look of GitHub. **No GitHub API calls** — everything renders in-process.
+Browse a folder of Markdown locally as a GitHub-styled site. **No GitHub API calls** — everything renders in-process.
 
-`mdbrowse` is a Node.js port of [`go-grip`](https://github.com/inkless/go-grip), which is itself a Go port of [`grip`](https://github.com/joeyespo/grip). Same UX, same output, distributed as an npm package so it works with `npx` / `pnpm dlx` / global install — no Go toolchain required.
+What you get out of the box:
+
+- a **file-tree sidebar** that scans the served directory and highlights the current file
+- a **⌘K / Ctrl+K file picker** with fzf-style subsequence matching across filenames + folders
+- **websocket live reload** across the whole tree on save (not just the open file)
+- **synthetic directory listings** when a folder has no `README.md`, so URLs never dead-end on a 404
+- **GitHub-flavored alerts** (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`) with the real octicon SVGs
+- **dual-theme syntax highlighting** via [shiki](https://shiki.style) — one render serves both `github-light` and `github-dark`, swaps via CSS variables
+- client-side **Mermaid** + **MathJax** (inline `$x$`, block `$$x$$`, fenced ` ```math `)
+- a typed **programmatic API** — `renderMarkdown`, `renderMarkdownWithHighlighting`, `serveMarkdown` — for embedding inside a Node service
+- ships as an npm package: `npx`, `pnpm dlx`, or global install — no Go/Python toolchain required
 
 ## Install
 
@@ -109,9 +119,9 @@ Bare `#NNN` references (without an `owner/repo` prefix) only resolve to GitHub U
 renderMarkdown(md, { repository: "octocat/hello-world" });
 ```
 
-## Why
+## Heritage
 
-The original `grip` calls the GitHub Markdown API. `go-grip` removes that dependency by rendering everything in-process. `mdbrowse` is the same idea in the Node.js ecosystem — same output as `go-grip` (octicon SVGs in alerts, identical file-tree HTML, GitHub-style CSS), but installable with the JS toolchain you already have.
+`mdbrowse` started as a Node.js port of [`go-grip`](https://github.com/inkless/go-grip) (itself a Go port of [`grip`](https://github.com/joeyespo/grip)). It has since grown beyond the original "preview a single README" framing into a folder browser: sidebar nav across the tree, ⌘K search, synthetic directory listings, and a programmatic API for embedding the renderer/server in your own Node code.
 
 ## Development
 
