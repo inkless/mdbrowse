@@ -43,7 +43,14 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test
 
-      - run: pnpm publish --access public --provenance --no-git-checks
+      # Publish via the npm CLI (≥11.5.1) so npm's Trusted Publishing
+      # OIDC exchange runs. `pnpm publish` only signs Sigstore provenance
+      # but does not authenticate to the npm registry, leading to a
+      # 404/401 against `@scope/pkg`.
+      - name: Upgrade npm CLI for trusted publishing
+        run: npm install -g npm@latest
+      - name: Publish via npm
+        run: npm publish --access public --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
