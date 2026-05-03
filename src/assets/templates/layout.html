@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="/static/css/theme-switch.css" />
     <link rel="stylesheet" href="/static/css/width-toggle.css" />
     <link rel="stylesheet" href="/static/css/file-explorer.css" />
+    <link rel="stylesheet" href="/static/css/file-search.css" />
     <script src="/static/js/theme-switch.js"></script>
     <script src="/static/js/width-toggle.js"></script>
     <script src="/static/js/file-explorer.js"></script>
@@ -39,6 +40,10 @@
     <script src="/static/js/tex-mml-chtml.js"></script>
     <script src="/static/js/mermaid.min.js"></script>
     <script src="/static/js/mermaid-init.js"></script>
+    {{if .FileIndex}}
+    <script type="application/json" id="mdbrowse-file-index">{{ .FileIndex }}</script>
+    <script src="/static/js/file-search.js" defer></script>
+    {{end}}
   </head>
 
   <body>
@@ -51,6 +56,11 @@
       <nav class="file-tree">{{ .FileExplorer }}</nav>
     </aside>
     <div id="explorer-backdrop" class="explorer-backdrop"></div>
+    {{end}}
+    {{if .FileIndex}}
+    <button id="search-toggle" class="search-toggle" title="Search files (⌘K / Ctrl+K)" aria-label="Search files">
+      <span class="search-toggle-icon" aria-hidden="true">⌕</span>
+    </button>
     {{end}}
     <button id="width-toggle" class="width-toggle" title="Toggle width">
       <span class="width-toggle-icon"></span>

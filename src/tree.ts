@@ -86,3 +86,32 @@ function hasMarkdown(node: TreeNode): boolean {
   if (!node.isDir) return MD_EXT.test(node.name);
   return node.children.some(hasMarkdown);
 }
+
+export interface FileEntry {
+  /** URL path with leading slash, e.g. `/docs/guide.md`. */
+  path: string;
+  /** Basename, e.g. `guide.md`. */
+  name: string;
+}
+
+/**
+ * Flatten a tree into a path-sorted list of markdown file entries. Used
+ * by the client-side file-search modal to do fzf-style matching without a
+ * round-trip to the server.
+ */
+export function flattenTree(root: TreeNode): FileEntry[] {
+  const out: FileEntry[] = [];
+  walk(root, out);
+  out.sort((a, b) => a.path.localeCompare(b.path));
+  return out;
+}
+
+function walk(node: TreeNode, out: FileEntry[]): void {
+  if (!node.isDir) {
+    if (MD_EXT.test(node.name)) {
+      out.push({ path: node.urlPath, name: node.name });
+    }
+    return;
+  }
+  for (const child of node.children) walk(child, out);
+}

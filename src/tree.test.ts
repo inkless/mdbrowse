@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderTree } from "./render-tree.js";
-import { buildTree, type TreeNode } from "./tree.js";
+import { buildTree, flattenTree, type TreeNode } from "./tree.js";
 
 let dir: string;
 
@@ -87,5 +87,31 @@ describe("renderTree", () => {
     const html = renderTree(buildTree(dir), "/");
     expect(html).toContain("weird &amp; dir");
     expect(html).toContain("&lt;file&gt;.md");
+  });
+});
+
+describe("flattenTree", () => {
+  it("returns markdown files only, sorted by path, with forward-slash URL paths", () => {
+    writeFileSync(join(dir, "README.md"), "# r\n");
+    writeFileSync(join(dir, "zzz.md"), "z\n");
+    writeFileSync(join(dir, "ignored.txt"), "skip");
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "guide.md"), "# g\n");
+    writeFileSync(join(dir, "docs", "alpha.md"), "# a\n");
+
+    const entries = flattenTree(buildTree(dir));
+
+    // Case-insensitive locale sort: lowercase 'd' < uppercase 'R' < 'z'.
+    expect(entries.map((e) => e.path)).toEqual([
+      "/docs/alpha.md",
+      "/docs/guide.md",
+      "/README.md",
+      "/zzz.md",
+    ]);
+    expect(entries.map((e) => e.name)).toEqual(["alpha.md", "guide.md", "README.md", "zzz.md"]);
+  });
+
+  it("returns an empty list for a tree with no markdown", () => {
+    expect(flattenTree({ name: "x", urlPath: "/", isDir: true, children: [] })).toEqual([]);
   });
 });

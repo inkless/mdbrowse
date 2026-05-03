@@ -62,6 +62,7 @@ Options:
 - 🖼️ **`<details>` state preserved** across reloads (sessionStorage)
 - 🌗 **Light/dark theme toggle** with system-preference detection
 - 📁 **File-tree sidebar** — automatically built from the served directory, current file highlighted
+- 🔍 **File search** — `Cmd+K` / `Ctrl+K` opens a fzf-style picker that matches filenames and folder names; arrow keys + Enter to jump
 - 🔄 **Live reload** over websocket on file changes (disable with `--no-reload`)
 - 😀 **GitHub emoji shortcodes** (`:ship:` → 🚢)
 - 🚫 **No external API calls** — works fully offline

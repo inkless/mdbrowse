@@ -22,6 +22,12 @@ export interface LayoutValues {
   Title: string;
   Content: string;
   FileExplorer: string;
+  /**
+   * JSON-encoded `FileEntry[]` for the client-side file-search modal.
+   * Empty string means search is disabled (no markdown files in the
+   * served directory).
+   */
+  FileIndex: string;
   BoundingBox: boolean;
 }
 
