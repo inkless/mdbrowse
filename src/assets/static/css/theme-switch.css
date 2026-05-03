@@ -4,6 +4,16 @@ body {
   background-color: #ffffff;
   color-scheme: light;
 }
+
+/* Reserve space at the top of the viewport so the fixed toolbar (hamburger,
+   search, width, theme) doesn't collide with content. Only kicks in below
+   the desktop breakpoint where the .container loses its centered max-width
+   and the markdown-body extends edge-to-edge under the toggles. */
+@media (max-width: 939px) {
+  body {
+    padding-top: 56px;
+  }
+}
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #0d1117;
