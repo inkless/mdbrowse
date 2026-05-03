@@ -54,7 +54,7 @@ Options:
   -b, --browser         Open in browser on start (default)
       --no-browser      Do not open the browser
   -H, --host <host>     Host to bind (default: localhost)
-  -p, --port <port>     Port to bind (default: 6419)
+  -p, --port <port>     Port to bind; falls back to the next free port if busy (default: 6419)
       --bounding-box    Wrap content in GitHub bounding box (default)
       --no-bounding-box Disable bounding box
       --no-reload       Disable browser auto-reload on file changes

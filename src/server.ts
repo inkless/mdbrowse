@@ -96,13 +96,7 @@ export async function serveMarkdown(
     });
   });
 
-  await new Promise<void>((ok, fail) => {
-    server.once("error", fail);
-    server.listen(port, host, () => {
-      server.off("error", fail);
-      ok();
-    });
-  });
+  await listenWithFallback(server, host, port);
 
   if (reloadEnabled) {
     live = attachLiveReload(server, directory);
@@ -146,6 +140,53 @@ export async function serveMarkdown(
 function closeServer(server: Server): Promise<void> {
   return new Promise((ok, fail) => {
     server.close((err) => (err ? fail(err) : ok()));
+  });
+}
+
+const PORT_FALLBACK_ATTEMPTS = 10;
+
+// Listen on `port`; if it's in use, increment by one and retry up to
+// PORT_FALLBACK_ATTEMPTS times. `port: 0` means "OS picks a free port" —
+// no fallback semantics apply.
+async function listenWithFallback(server: Server, host: string, port: number): Promise<void> {
+  if (port === 0) {
+    return new Promise((ok, fail) => {
+      server.once("error", fail);
+      server.listen(0, host, () => {
+        server.off("error", fail);
+        ok();
+      });
+    });
+  }
+  for (let attempt = 0; attempt < PORT_FALLBACK_ATTEMPTS; attempt++) {
+    const candidate = port + attempt;
+    if (candidate > 65535) break;
+    try {
+      await tryListen(server, host, candidate);
+      if (candidate !== port) {
+        console.log(`⚠️  Port ${port} in use, falling back to ${candidate}`);
+      }
+      return;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EADDRINUSE") throw err;
+    }
+  }
+  throw new Error(`mdbrowse: no free port found in ${port}-${port + PORT_FALLBACK_ATTEMPTS - 1}`);
+}
+
+function tryListen(server: Server, host: string, port: number): Promise<void> {
+  return new Promise((ok, fail) => {
+    const onError = (err: Error): void => {
+      server.off("listening", onListening);
+      fail(err);
+    };
+    const onListening = (): void => {
+      server.off("error", onError);
+      ok();
+    };
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, host);
   });
 }
 

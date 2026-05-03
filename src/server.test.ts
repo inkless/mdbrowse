@@ -1,4 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { type AddressInfo, createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -113,4 +114,30 @@ describe("serveMarkdown", () => {
     // Listing should include a link to `guide.md` so the user can drill in.
     expect(body).toMatch(/href="guide\.md"/);
   });
+
+  it("falls back to the next free port when the requested one is busy", async () => {
+    // Squat on a free port via a bare TCP listener — we use net.createServer
+    // (not http) so this fixture has no overlap with the mdbrowse code path.
+    const squatter = createServer();
+    await new Promise<void>((ok) => squatter.listen(0, "localhost", ok));
+    const busyPort = (squatter.address() as AddressInfo).port;
+
+    const fallback = await serveMarkdown(null, {
+      directory: tmp,
+      port: busyPort,
+      browser: false,
+      reload: false,
+    });
+    try {
+      const fallbackPort = Number(new URL(fallback.url).port);
+      expect(fallbackPort).toBeGreaterThan(busyPort);
+      // Smoke: the fallback server actually serves content.
+      const baseUrl = fallback.url.replace(/README\.md$/, "");
+      const res = await fetch(baseUrl);
+      expect(res.status).toBe(200);
+    } finally {
+      await fallback.close();
+      await new Promise<void>((ok) => squatter.close(() => ok()));
+    }
+  }, 10_000);
 });
