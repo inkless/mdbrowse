@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -11,6 +11,13 @@ beforeAll(async () => {
   tmp = mkdtempSync(join(tmpdir(), "mdbrowse-server-"));
   writeFileSync(join(tmp, "README.md"), "# hello\n\nbody with `#42` and ```js\nconst x = 1\n```\n");
   writeFileSync(join(tmp, "image.txt"), "not markdown");
+  // Subdir with README.md — directory request with trailing slash should
+  // serve this file (no redirect loop, no 404).
+  mkdirSync(join(tmp, "withreadme"));
+  writeFileSync(join(tmp, "withreadme", "README.md"), "# inner\n");
+  // Subdir without any README.md — should 404, not loop.
+  mkdirSync(join(tmp, "noreadme"));
+  writeFileSync(join(tmp, "noreadme", "guide.md"), "# guide\n");
   // Bind to port 0 so the OS picks a free port — avoids flaky CI on 6419.
   handle = await serveMarkdown(null, {
     directory: tmp,
@@ -25,14 +32,13 @@ afterAll(async () => {
 });
 
 describe("serveMarkdown", () => {
-  it("redirects the root to /README.md when a README is present", async () => {
+  it("serves the root README.md when fetching `/`", async () => {
     const baseUrl = handle.url.replace(/README\.md$/, "");
     const res = await fetch(baseUrl, { redirect: "manual" });
-    expect(res.status).toBe(302);
-    // Should redirect to a path ending in README.md or just stay at /
-    // (server rewrites to /README.md by joining the URL itself; here we
-    // verify the configured URL is README.md).
-    expect(handle.url).toContain("README.md");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    expect(body).toContain("<title>hello</title>");
   });
 
   it("renders a markdown file as HTML wrapped in the layout template", async () => {
@@ -76,5 +82,29 @@ describe("serveMarkdown", () => {
     const res = await fetch(`${baseUrl}image.txt`);
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("not markdown");
+  });
+
+  it("serves a subdirectory's README.md when requested with a trailing slash", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}withreadme/`, { redirect: "manual" });
+    // Critical: no redirect (would loop forever), 200 with the inner
+    // README.md rendered as HTML.
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    expect(body).toContain("<title>inner</title>");
+  });
+
+  it("redirects a directory without trailing slash to canonical /dir/ form", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}withreadme`, { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/withreadme/");
+  });
+
+  it("returns 404 for a directory with no README.md (no redirect loop)", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}noreadme/`, { redirect: "manual" });
+    expect(res.status).toBe(404);
   });
 });

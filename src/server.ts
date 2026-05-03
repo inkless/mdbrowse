@@ -186,8 +186,26 @@ async function handle(
   }
 
   if (info.isDirectory()) {
-    res.writeHead(302, { Location: `${urlPath.replace(/\/+$/, "")}/` });
-    res.end();
+    // No trailing slash → redirect to canonical form so relative URLs
+    // (`./foo.md`, `../bar.md`) resolve as expected. With a trailing
+    // slash already, look for a README.md inside and serve it; if none,
+    // 404 (avoids redirect-looping back to the same URL).
+    if (!urlPath.endsWith("/")) {
+      res.writeHead(302, { Location: `${urlPath}/` });
+      res.end();
+      return;
+    }
+    const readmePath = resolve(filePath, "README.md");
+    try {
+      const readmeInfo = statSync(readmePath);
+      if (readmeInfo.isFile()) {
+        return serveMarkdownFile(res, md, readmePath, boundingBox, directory, urlPath, live);
+      }
+    } catch {
+      /* no README — fall through to 404 */
+    }
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Directory has no README.md");
     return;
   }
 
