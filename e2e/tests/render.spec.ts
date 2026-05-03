@@ -7,6 +7,19 @@ test.describe("rendering", () => {
     await expect(page.locator("h1#sample-project")).toHaveText("Sample Project");
   });
 
+  test("heading text is not wrapped in a hyperlink", async ({ page }) => {
+    // markdown-it-anchor's `headerLink` permalink mode would wrap the
+    // entire heading in `<a>`, which the GitHub CSS styles as a blue
+    // underlined link. We use `linkInsideHeader` so the heading text
+    // stays plain and a sibling `<a class="anchor">` is added (which
+    // the CSS reveals on hover as an octicon-link icon).
+    await page.goto("/README.md");
+    const heading = page.locator("h1#sample-project");
+    await expect(heading.locator("a.anchor")).toHaveCount(1);
+    // No non-`.anchor` link should exist directly inside the heading.
+    await expect(heading.locator("a:not(.anchor)")).toHaveCount(0);
+  });
+
   test("syntax-highlights TypeScript code via shiki", async ({ page }) => {
     await page.goto("/README.md");
     const code = page.locator("pre.shiki").first();

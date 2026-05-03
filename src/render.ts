@@ -48,7 +48,17 @@ export function createRenderer(options: RenderOptions = {}): MarkdownIt {
   md.use(footnote);
   md.use(emoji);
   md.use(anchor, {
-    permalink: anchor.permalink.headerLink({ safariReaderFix: false }),
+    // `linkInsideHeader` keeps the heading text plain and inserts a
+    // sibling `<a class="anchor">` — matching the structure the vendored
+    // GitHub markdown CSS targets (`.markdown-body h1:hover .anchor`).
+    // `headerLink` would wrap the whole text in `<a>`, which the CSS
+    // styles as a blue underlined link.
+    permalink: anchor.permalink.linkInsideHeader({
+      class: "anchor",
+      symbol: '<span aria-hidden="true" class="octicon octicon-link"></span>',
+      placement: "before",
+      ariaHidden: true,
+    }),
     slugify: (s: string) =>
       s
         .toLowerCase()
