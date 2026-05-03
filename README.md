@@ -131,12 +131,16 @@ cd mdbrowse
 pnpm install
 
 pnpm dev          # tsup watch
-pnpm test         # vitest (49 tests)
+pnpm test         # vitest
 pnpm lint         # biome
 pnpm typecheck    # tsc --noEmit
 pnpm build        # one-shot build to dist/
 node dist/cli.js README.md
 ```
+
+## Releases
+
+Versioning + changelog are automated by [Release Please](https://github.com/googleapis/release-please). Commit to `main` using [Conventional Commits](https://www.conventionalcommits.org/) (`feat: …`, `fix: …`, `docs: …`, `chore: …`); the action keeps a single open "Release PR" that bumps `package.json` and updates [`CHANGELOG.md`](./CHANGELOG.md). Merging the Release PR cuts the `vX.Y.Z` tag, which triggers `release.yml` to publish to npm via Trusted Publishing OIDC.
 
 ## License
 
