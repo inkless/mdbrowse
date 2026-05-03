@@ -45,16 +45,18 @@ jobs:
 
       # Publish via the npm CLI (≥11.5.1) so npm's Trusted Publishing
       # OIDC exchange runs. `pnpm publish` only signs Sigstore provenance
-      # but does not authenticate to the npm registry, leading to a
-      # 404/401 against `@scope/pkg`.
-      - name: Upgrade npm CLI for trusted publishing
-        run: npm install -g npm@latest
+      # but does not authenticate to the npm registry. We run npm via
+      # `npx` so we get the latest CLI without the global self-install
+      # (which is brittle on the GitHub-hosted runner — `npm install -g
+      # npm@latest` often leaves a partial state and fails with
+      # `Cannot find module 'promise-retry'`).
+      #
       # `--ignore-scripts` skips the `prepublishOnly` hook in package.json
       # (which would re-run build/test/lint) since the steps above already
       # cover that. Local `pnpm publish` from a developer's laptop still
       # benefits from the hook as a safety net.
-      - name: Publish via npm
-        run: npm publish --access public --provenance --ignore-scripts
+      - name: Publish via npm with trusted publishing
+        run: npx -y npm@latest publish --access public --provenance --ignore-scripts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
