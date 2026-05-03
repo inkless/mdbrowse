@@ -21,6 +21,9 @@
   background: transparent !important;
   opacity: 0;
   transition: opacity 0.15s ease-in;
+  /* Anchor `position: absolute` children (toolbar) to the diagram itself
+     instead of letting them escape to the nearest positioned ancestor. */
+  position: relative;
 }
 
 .mermaid.rendered {
