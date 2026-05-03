@@ -56,6 +56,7 @@
   }
 }
 
+/* Light defaults — apply unless overridden by an explicit theme below. */
 .mdbrowse-search {
   padding: 0;
   border: 1px solid #d0d7de;
@@ -73,6 +74,23 @@
   background: rgba(0, 0, 0, 0.4);
 }
 
+/* System-preference fallback — only when the document hasn't been
+   explicitly themed yet (FOUC window before theme-switch.js runs, or
+   when JS is disabled). Once `data-theme` is set on <body>, the rules
+   below win on specificity. */
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) .mdbrowse-search {
+    background: #161b22;
+    color: #e6edf3;
+    border-color: #30363d;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  }
+  body:not([data-theme]) .mdbrowse-search::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Explicit dark theme set via theme-switch.js. */
 [data-theme="dark"] .mdbrowse-search {
   background: #161b22;
   color: #e6edf3;
@@ -82,13 +100,6 @@
 [data-theme="dark"] .mdbrowse-search::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
-@media (prefers-color-scheme: dark) {
-  .mdbrowse-search:not([data-theme="light"]) {
-    background: #161b22;
-    color: #e6edf3;
-    border-color: #30363d;
-  }
-}
 
 .mdbrowse-search__input-row {
   display: flex;
@@ -97,6 +108,11 @@
   border-bottom: 1px solid #d0d7de;
 }
 
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) .mdbrowse-search__input-row {
+    border-bottom-color: #30363d;
+  }
+}
 [data-theme="dark"] .mdbrowse-search__input-row {
   border-bottom-color: #30363d;
 }
@@ -116,6 +132,11 @@
   font-size: 12px;
   color: #656d76;
   white-space: nowrap;
+}
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) .mdbrowse-search__hint {
+    color: #8b949e;
+  }
 }
 [data-theme="dark"] .mdbrowse-search__hint {
   color: #8b949e;
@@ -139,6 +160,12 @@
   background: #ddf4ff;
   border-left-color: #0969da;
 }
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) .mdbrowse-search__result[aria-selected="true"] {
+    background: rgba(56, 139, 253, 0.18);
+    border-left-color: #58a6ff;
+  }
+}
 [data-theme="dark"] .mdbrowse-search__result[aria-selected="true"] {
   background: rgba(56, 139, 253, 0.18);
   border-left-color: #58a6ff;
@@ -154,6 +181,11 @@
   color: #656d76;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) .mdbrowse-search__result-path {
+    color: #8b949e;
+  }
+}
 [data-theme="dark"] .mdbrowse-search__result-path {
   color: #8b949e;
 }
@@ -163,6 +195,11 @@
   font-size: 14px;
   color: #656d76;
   text-align: center;
+}
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) .mdbrowse-search__empty {
+    color: #8b949e;
+  }
 }
 [data-theme="dark"] .mdbrowse-search__empty {
   color: #8b949e;
