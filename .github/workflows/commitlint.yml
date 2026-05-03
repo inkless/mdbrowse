@@ -1,0 +1,24 @@
+name: Commitlint
+
+# Validates that every new commit subject matches Conventional Commits
+# (`<type>(<scope>): <subject>`) with a `type` Release Please understands.
+# Catches typos like `Fix:` or `feet:` before Release Please silently
+# ignores them and the commit ends up missing from the changelog.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v6
