@@ -1,4 +1,4 @@
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, readdirSync, statSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { dirname, extname, isAbsolute, join, resolve } from "node:path";
@@ -187,14 +187,15 @@ async function handle(
 
   if (info.isDirectory()) {
     // No trailing slash → redirect to canonical form so relative URLs
-    // (`./foo.md`, `../bar.md`) resolve as expected. With a trailing
-    // slash already, look for a README.md inside and serve it; if none,
-    // 404 (avoids redirect-looping back to the same URL).
+    // (`./foo.md`, `../bar.md`) resolve as expected.
     if (!urlPath.endsWith("/")) {
       res.writeHead(302, { Location: `${urlPath}/` });
       res.end();
       return;
     }
+    // Trailing slash present. Prefer rendering the directory's
+    // README.md if it exists; otherwise generate a directory listing
+    // page so the user can still navigate.
     const readmePath = resolve(filePath, "README.md");
     try {
       const readmeInfo = statSync(readmePath);
@@ -202,11 +203,9 @@ async function handle(
         return serveMarkdownFile(res, md, readmePath, boundingBox, directory, urlPath, live);
       }
     } catch {
-      /* no README — fall through to 404 */
+      /* no README — fall through to listing */
     }
-    res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Directory has no README.md");
-    return;
+    return serveDirectoryListing(res, md, filePath, urlPath, boundingBox, directory, live);
   }
 
   return serveFile(res, filePath);
@@ -222,6 +221,71 @@ async function serveMarkdownFile(
   live: LiveReloadHandle | null,
 ): Promise<void> {
   const source = await readFile(filePath, "utf8");
+  const fallbackTitle = filePath.split(/[\\/]/).pop()?.replace(MD_RE, "") ?? "";
+  return servePage(res, md, source, fallbackTitle, boundingBox, directory, currentUrlPath, live);
+}
+
+function serveDirectoryListing(
+  res: ServerResponse,
+  md: MarkdownIt,
+  dirPath: string,
+  urlPath: string,
+  boundingBox: boolean,
+  directory: string,
+  live: LiveReloadHandle | null,
+): Promise<void> {
+  const source = buildDirectoryListing(dirPath, urlPath);
+  return servePage(res, md, source, urlPath, boundingBox, directory, urlPath, live);
+}
+
+/**
+ * Build a synthetic markdown page listing the immediate (non-hidden)
+ * contents of a directory. Used when the user navigates to `/foo/` and
+ * there's no `README.md` inside — gives them a clickable index instead
+ * of a dead-end error page.
+ */
+function buildDirectoryListing(dirPath: string, urlPath: string): string {
+  let entries: string[];
+  try {
+    entries = readdirSync(dirPath);
+  } catch {
+    return `# ${urlPath}\n\n_Cannot read directory._\n`;
+  }
+
+  const dirs: string[] = [];
+  const files: string[] = [];
+  for (const name of entries) {
+    if (name.startsWith(".")) continue;
+    let info: ReturnType<typeof statSync>;
+    try {
+      info = statSync(join(dirPath, name));
+    } catch {
+      continue;
+    }
+    const encoded = encodeURIComponent(name);
+    if (info.isDirectory()) dirs.push(`- [${name}/](${encoded}/)`);
+    else if (info.isFile()) files.push(`- [${name}](${encoded})`);
+  }
+
+  const sortByLower = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase());
+  dirs.sort(sortByLower);
+  files.sort(sortByLower);
+
+  const body = [...dirs, ...files].join("\n");
+  if (!body) return `# ${urlPath}\n\n_Empty directory._\n`;
+  return `# ${urlPath}\n\n${body}\n`;
+}
+
+async function servePage(
+  res: ServerResponse,
+  md: MarkdownIt,
+  source: string,
+  fallbackTitle: string,
+  boundingBox: boolean,
+  directory: string,
+  currentUrlPath: string,
+  live: LiveReloadHandle | null,
+): Promise<void> {
   const { html, title } = render(md, source);
 
   let explorer = "";
@@ -236,7 +300,6 @@ async function serveMarkdownFile(
     // tree build can fail on permissions / racy fs — degrade silently
   }
 
-  const fallbackTitle = filePath.split(/[\\/]/).pop()?.replace(MD_RE, "") ?? "";
   const values: LayoutValues = {
     Title: escapeHtml(title || fallbackTitle),
     Content: html,

@@ -102,9 +102,15 @@ describe("serveMarkdown", () => {
     expect(res.headers.get("location")).toBe("/withreadme/");
   });
 
-  it("returns 404 for a directory with no README.md (no redirect loop)", async () => {
+  it("renders a directory listing when the directory has no README.md", async () => {
     const baseUrl = handle.url.replace(/README\.md$/, "");
     const res = await fetch(`${baseUrl}noreadme/`, { redirect: "manual" });
-    expect(res.status).toBe(404);
+    // Critical: not a redirect (would loop) and not a 404 dead-end.
+    // We render a synthetic markdown page that links to the contents.
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    // Listing should include a link to `guide.md` so the user can drill in.
+    expect(body).toMatch(/href="guide\.md"/);
   });
 });
