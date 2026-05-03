@@ -22,7 +22,9 @@ jobs:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Node 24 LTS bundles npm 11.x, which has Trusted Publishing
+          # OIDC support. Node 22 ships with npm 10.x — too old.
+          node-version: 24
           registry-url: https://registry.npmjs.org
           cache: pnpm
       - run: pnpm install --frozen-lockfile
@@ -43,20 +45,16 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test
 
-      # Publish via the npm CLI (≥11.5.1) so npm's Trusted Publishing
-      # OIDC exchange runs. `pnpm publish` only signs Sigstore provenance
-      # but does not authenticate to the npm registry. We run npm via
-      # `npx` so we get the latest CLI without the global self-install
-      # (which is brittle on the GitHub-hosted runner — `npm install -g
-      # npm@latest` often leaves a partial state and fails with
-      # `Cannot find module 'promise-retry'`).
+      # Publish via the npm CLI bundled with Node 24 (npm 11.x), which
+      # supports Trusted Publishing OIDC. `pnpm publish` only signs
+      # Sigstore provenance but doesn't authenticate to the npm registry.
       #
       # `--ignore-scripts` skips the `prepublishOnly` hook in package.json
       # (which would re-run build/test/lint) since the steps above already
       # cover that. Local `pnpm publish` from a developer's laptop still
       # benefits from the hook as a safety net.
       - name: Publish via npm with trusted publishing
-        run: npx -y npm@latest publish --access public --provenance --ignore-scripts
+        run: npm publish --access public --provenance --ignore-scripts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
