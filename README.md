@@ -8,13 +8,15 @@ Render Markdown files locally with the look of GitHub. **No GitHub API calls** â
 
 ```bash
 # global
-pnpm add -g mdbrowse
-npm i -g mdbrowse
+pnpm add -g @inkless/mdbrowse
+npm i -g @inkless/mdbrowse
 
 # one-shot, no install
-pnpm dlx mdbrowse README.md
-npx mdbrowse README.md
+pnpm dlx @inkless/mdbrowse README.md
+npx @inkless/mdbrowse README.md
 ```
+
+The npm package is published as `@inkless/mdbrowse`; the binary it installs on your PATH is `mdbrowse`.
 
 ## Usage
 
@@ -69,7 +71,7 @@ Options:
 `mdbrowse` is also a library:
 
 ```ts
-import { renderMarkdown, renderMarkdownWithHighlighting, serveMarkdown } from "mdbrowse";
+import { renderMarkdown, renderMarkdownWithHighlighting, serveMarkdown } from "@inkless/mdbrowse";
 
 // Sync render, no syntax highlighting (fastest):
 const { html, title } = renderMarkdown("# hello\n");
@@ -90,7 +92,7 @@ await handle.close();
 For repeated rendering (e.g. inside a long-running server), build the renderer once:
 
 ```ts
-import { createRendererWithHighlighting, render } from "mdbrowse";
+import { createRendererWithHighlighting, render } from "@inkless/mdbrowse";
 const md = await createRendererWithHighlighting();
 for (const doc of docs) {
   const { html } = render(md, doc);

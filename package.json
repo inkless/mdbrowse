@@ -1,5 +1,5 @@
 {
-  "name": "mdbrowse",
+  "name": "@inkless/mdbrowse",
   "version": "0.1.0",
   "description": "Render Markdown files locally with the look of GitHub. A Node.js port of go-grip / grip — no GitHub API calls, fully offline.",
   "keywords": [

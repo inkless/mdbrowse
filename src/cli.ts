@@ -28,8 +28,9 @@ export function createProgram(): Command {
   const pkg = readPackageJson();
   const program = new Command();
 
+  // Help/usage shows the binary name, not the (scoped) package name.
   program
-    .name(pkg.name)
+    .name("mdbrowse")
     .description(pkg.description)
     .version(pkg.version, "-v, --version", "Print version and exit")
     .argument("[file]", "Markdown file to render (defaults to README.md in cwd if present)")
