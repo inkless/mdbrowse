@@ -7,7 +7,6 @@
     "lib": ["ES2022"],
     "types": ["node"],
     "outDir": "dist",
-    "rootDir": "src",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -21,6 +20,6 @@
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests/**/__fixtures__/**"]
+  "include": ["src/**/*", "e2e/**/*", "playwright.config.ts"],
+  "exclude": ["node_modules", "dist", "tests/**/__fixtures__/**", "e2e/fixtures/**"]
 }

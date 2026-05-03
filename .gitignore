@@ -8,6 +8,11 @@ dist
 # Test/coverage
 coverage
 
+# Playwright
+playwright-report
+test-results
+e2e/.auth
+
 # Tarballs from `npm pack` / `pnpm pack`
 *.tgz
 
