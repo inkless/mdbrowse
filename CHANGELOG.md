@@ -2,6 +2,23 @@
 
 All notable changes to `@inkless/mdbrowse` are documented in this file. From 0.2.3 onward this file is maintained automatically by [Release Please](https://github.com/googleapis/release-please) from Conventional Commit messages on `main`. The 0.1.0 → 0.2.2 entries below were backfilled by hand.
 
+## [0.2.4](https://github.com/inkless/mdbrowse/compare/v0.2.3...v0.2.4) (2026-05-04)
+
+
+### Features
+
+* **tree:** hide node_modules and other build dirs from sidebar by default ([5b259bc](https://github.com/inkless/mdbrowse/commit/5b259bcde6eaa0d60791d5a889a40c1859060fb5))
+
+
+### Bug Fixes
+
+* **search:** close the search modal on backdrop click ([ba23140](https://github.com/inkless/mdbrowse/commit/ba23140382ad34cbd0c47cdd29841a99e92d02fa))
+
+
+### Documentation
+
+* clarify mdbrowse serves the whole current directory, not just a file ([52a304a](https://github.com/inkless/mdbrowse/commit/52a304a686271938ec1559062bafa18fddf8a7ae))
+
 ## [0.2.3](https://github.com/inkless/mdbrowse/compare/v0.2.2...v0.2.3) (2026-05-04)
 
 
