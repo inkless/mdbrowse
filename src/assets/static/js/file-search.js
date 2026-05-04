@@ -46,6 +46,14 @@
     refresh(input.value);
   });
 
+  // Backdrop click closes the dialog. Trick: with `dialog.showModal()`,
+  // clicks on the backdrop bubble to the <dialog> element with
+  // `event.target === dialog`. Clicks on any child (input, results, etc.)
+  // have a deeper target so they pass through.
+  dialog.addEventListener("click", function (e) {
+    if (e.target === dialog) dialog.close();
+  });
+
   // Keyboard navigation inside the dialog.
   dialog.addEventListener("keydown", function (e) {
     if (e.key === "ArrowDown") {
