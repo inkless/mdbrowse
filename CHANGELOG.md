@@ -2,6 +2,15 @@
 
 All notable changes to `@inkless/mdbrowse` are documented in this file. From 0.2.3 onward this file is maintained automatically by [Release Please](https://github.com/googleapis/release-please) from Conventional Commit messages on `main`. The 0.1.0 → 0.2.2 entries below were backfilled by hand.
 
+## [0.2.3](https://github.com/inkless/mdbrowse/compare/v0.2.2...v0.2.3) (2026-05-04)
+
+
+### Features
+
+* **server:** fall back to next free port when requested one is busy ([54c2f9a](https://github.com/inkless/mdbrowse/commit/54c2f9ad75cf6b5762cdade318247b18f9b2ff08))
+* **ui:** copy button on every shiki code block ([3ed3fc7](https://github.com/inkless/mdbrowse/commit/3ed3fc71aa48c123db098afaeb13578bf6f8aeb0))
+* **ui:** copy markdown source to clipboard from a toolbar button ([5f72bc3](https://github.com/inkless/mdbrowse/commit/5f72bc324bdb59ad0af77831a567bb125ca6a36f))
+
 ## [0.2.2](https://github.com/inkless/mdbrowse/compare/v0.2.1...v0.2.2)
 
 ### Bug Fixes
