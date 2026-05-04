@@ -1,6 +1,6 @@
 {
   "name": "@inkless/mdbrowse",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Browse a folder of Markdown locally as a GitHub-styled site. Sidebar nav, ⌘K file search, live reload, mermaid + math, shiki dual-theme highlighting, programmatic API — fully offline, no GitHub API calls.",
   "keywords": [
     "markdown",
