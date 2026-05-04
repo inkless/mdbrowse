@@ -4,10 +4,17 @@ name: Release
 # match the tag (without the `v` prefix). Authenticates to npm via Trusted
 # Publishing (OIDC) — configure on npmjs.com under the package's Settings →
 # Trusted Publisher. No NPM_TOKEN secret needed.
+#
+# Also exposes a manual `workflow_dispatch` trigger as an escape hatch:
+# when Release Please cuts a tag with the default `GITHUB_TOKEN`, GitHub
+# refuses to fire downstream workflows on that push (loop-prevention).
+# Re-publishing or first-time-after-PAT-setup runs go through here:
+#   gh workflow run release.yml --ref vX.Y.Z
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   publish:
