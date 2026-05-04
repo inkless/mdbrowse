@@ -34,7 +34,10 @@ export function createProgram(): Command {
     .name("mdbrowse")
     .description(pkg.description)
     .version(pkg.version, "-v, --version", "Print version and exit")
-    .argument("[file]", "Markdown file to render (defaults to README.md in cwd if present)")
+    .argument(
+      "[file]",
+      "Page to land on first (defaults to README.md if present). The whole current directory is always served — this is just the initial URL.",
+    )
     .option("-b, --browser", "Open in browser on start", true)
     .option("--no-browser", "Do not open the browser")
     .option("-H, --host <host>", "Host to bind", "localhost")

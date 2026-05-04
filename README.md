@@ -19,27 +19,35 @@ What you get out of the box:
 ```bash
 # global
 pnpm add -g @inkless/mdbrowse
-npm i -g @inkless/mdbrowse
+npm  i  -g @inkless/mdbrowse
+yarn global add @inkless/mdbrowse
 
 # one-shot, no install
-pnpm dlx @inkless/mdbrowse README.md
-npx @inkless/mdbrowse README.md
+pnpm dlx @inkless/mdbrowse
+npx       @inkless/mdbrowse
+yarn dlx  @inkless/mdbrowse   # yarn 2+ (Berry)
 ```
 
 The npm package is published as `@inkless/mdbrowse`; the binary it installs on your PATH is `mdbrowse`.
 
 ## Usage
 
+`mdbrowse` always serves the **current directory** as a browsable site (sidebar lists every `.md` file under it; `Cmd+K` searches across the whole tree). The optional positional argument is just which page to **land on** first — pass nothing and you land on `./README.md` if it exists, otherwise on a synthetic directory listing.
+
 ```bash
-mdbrowse                       # serve ./README.md if present, otherwise the dir
-mdbrowse docs/guide.md         # serve a specific file
-mdbrowse -p 3000 README.md     # custom port
+mdbrowse                       # serve cwd; land on ./README.md if present
+mdbrowse docs/guide.md         # serve cwd; land on /docs/guide.md
+mdbrowse docs/                 # serve cwd; land on /docs/ (its README or listing)
+mdbrowse -p 3000               # custom port (falls back to next free if busy)
 mdbrowse --no-browser          # don't auto-open the browser
 mdbrowse --no-reload           # disable live reload on file changes
-mdbrowse -H 0.0.0.0 README.md  # bind to all interfaces
+mdbrowse -H 0.0.0.0            # bind to all interfaces (LAN access)
+mdbrowse --all                 # also include dotfiles + node_modules / dist / …
 ```
 
-The default URL is `http://localhost:6419/<file>`. Hit **Ctrl-C** to stop.
+The default URL is `http://localhost:6419/`. Hit **Ctrl-C** to stop.
+
+To serve a different directory, `cd` into it first — `mdbrowse` always treats the current working directory as the root of the site.
 
 ### CLI reference
 
@@ -47,7 +55,9 @@ The default URL is `http://localhost:6419/<file>`. Hit **Ctrl-C** to stop.
 mdbrowse [options] [file]
 
 Arguments:
-  file                  Markdown file to render (defaults to README.md if present)
+  file                  Page to land on first (defaults to README.md in the
+                        current directory if present). The whole directory is
+                        always served — this argument is just the initial URL.
 
 Options:
   -v, --version         Print version and exit
