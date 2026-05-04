@@ -115,6 +115,58 @@ describe("serveMarkdown", () => {
     expect(body).toMatch(/href="guide\.md"/);
   });
 
+  it("embeds the raw markdown source as JSON for the copy-source button", async () => {
+    const res = await fetch(handle.url);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    // The source script tag should be present on a real .md page.
+    const match = body.match(
+      /<script type="application\/json" id="mdbrowse-source">([\s\S]*?)<\/script>/,
+    );
+    expect(match).not.toBeNull();
+    if (!match) return;
+    // Embedded payload is JSON; parsing should yield the original source.
+    const parsed = JSON.parse(match[1] ?? "");
+    expect(parsed).toContain("# hello");
+    expect(parsed).toContain("`#42`");
+    // The button is wired up.
+    expect(body).toContain('id="copy-source-toggle"');
+  });
+
+  it("does NOT embed source on synthetic directory listings", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}noreadme/`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).not.toContain('id="mdbrowse-source"');
+    expect(body).not.toContain('id="copy-source-toggle"');
+  });
+
+  it("escapes </script> inside embedded source so the tag doesn't terminate early", async () => {
+    // Write a file whose markdown contains a literal </script> sequence.
+    writeFileSync(join(tmp, "tricky.md"), "# tricky\n\nbody with </script> inside\n");
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    try {
+      const res = await fetch(`${baseUrl}tricky.md`);
+      expect(res.status).toBe(200);
+      const body = await res.text();
+      // The literal `</script>` must not appear inside the embedded JSON
+      // payload; it should be escaped to `<\/script>`.
+      const match = body.match(
+        /<script type="application\/json" id="mdbrowse-source">([\s\S]*?)<\/script>/,
+      );
+      expect(match).not.toBeNull();
+      if (!match) return;
+      expect(match[1]).not.toMatch(/<\/script>/i);
+      expect(match[1]).toMatch(/<\\\/script>/i);
+      // And JSON.parse round-trips correctly.
+      const parsed = JSON.parse(match[1] ?? "");
+      expect(parsed).toContain("</script>");
+    } finally {
+      rmSync(join(tmp, "tricky.md"), { force: true });
+    }
+  });
+
   it("falls back to the next free port when the requested one is busy", async () => {
     // Squat on a free port via a bare TCP listener — we use net.createServer
     // (not http) so this fixture has no overlap with the mdbrowse code path.

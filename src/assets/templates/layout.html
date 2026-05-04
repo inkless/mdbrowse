@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="/static/css/width-toggle.css" />
     <link rel="stylesheet" href="/static/css/file-explorer.css" />
     <link rel="stylesheet" href="/static/css/file-search.css" />
+    <link rel="stylesheet" href="/static/css/copy-source.css" />
     <script src="/static/js/theme-switch.js"></script>
     <script src="/static/js/width-toggle.js"></script>
     <script src="/static/js/file-explorer.js"></script>
@@ -43,6 +44,10 @@
     {{if .FileIndex}}
     <script type="application/json" id="mdbrowse-file-index">{{ .FileIndex }}</script>
     <script src="/static/js/file-search.js" defer></script>
+    {{end}}
+    {{if .Source}}
+    <script type="application/json" id="mdbrowse-source">{{ .Source }}</script>
+    <script src="/static/js/copy-source.js" defer></script>
     {{end}}
   </head>
 
@@ -60,6 +65,11 @@
     {{if .FileIndex}}
     <button id="search-toggle" class="search-toggle" title="Search files (⌘K / Ctrl+K)" aria-label="Search files">
       <span class="search-toggle-icon" aria-hidden="true">⌕</span>
+    </button>
+    {{end}}
+    {{if .Source}}
+    <button id="copy-source-toggle" class="copy-source-toggle" title="Copy markdown source" aria-label="Copy markdown source">
+      <span class="copy-source-toggle-icon" aria-hidden="true">⧉</span>
     </button>
     {{end}}
     <button id="width-toggle" class="width-toggle" title="Toggle width">

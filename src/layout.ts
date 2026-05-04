@@ -28,6 +28,13 @@ export interface LayoutValues {
    * served directory).
    */
   FileIndex: string;
+  /**
+   * JSON-encoded raw markdown source of the current page, embedded so
+   * the client-side "copy source" button doesn't need a round trip.
+   * Empty string means the source isn't a real on-disk file (e.g., a
+   * synthetic directory listing) and the copy button should be hidden.
+   */
+  Source: string;
   BoundingBox: boolean;
 }
 

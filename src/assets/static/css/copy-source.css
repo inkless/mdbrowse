@@ -1,0 +1,82 @@
+.copy-source-toggle {
+  position: fixed;
+  top: 20px;
+  right: 140px;
+  z-index: 1000;
+  background: transparent;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.copy-source-toggle:hover {
+  opacity: 1;
+}
+
+.copy-source-toggle-icon {
+  font-size: 16px;
+  line-height: 1;
+  color: #656d76;
+}
+
+/* Transient state after a successful copy. JS swaps the icon and adds
+   `is-copied` for ~1.2s, then reverts. */
+.copy-source-toggle.is-copied {
+  opacity: 1;
+  background: #ddf4ff;
+  border-color: #0969da;
+}
+.copy-source-toggle.is-copied .copy-source-toggle-icon {
+  color: #0969da;
+}
+
+@media (prefers-color-scheme: dark) {
+  .copy-source-toggle {
+    border-color: #484f58;
+  }
+  .copy-source-toggle-icon {
+    color: #8b949e;
+  }
+  .copy-source-toggle.is-copied {
+    background: rgba(56, 139, 253, 0.18);
+    border-color: #58a6ff;
+  }
+  .copy-source-toggle.is-copied .copy-source-toggle-icon {
+    color: #58a6ff;
+  }
+}
+
+[data-theme="dark"] .copy-source-toggle {
+  border-color: #484f58;
+}
+[data-theme="dark"] .copy-source-toggle-icon {
+  color: #8b949e;
+}
+[data-theme="dark"] .copy-source-toggle.is-copied {
+  background: rgba(56, 139, 253, 0.18);
+  border-color: #58a6ff;
+}
+[data-theme="dark"] .copy-source-toggle.is-copied .copy-source-toggle-icon {
+  color: #58a6ff;
+}
+
+[data-theme="light"] .copy-source-toggle {
+  border-color: #d0d7de;
+}
+[data-theme="light"] .copy-source-toggle-icon {
+  color: #656d76;
+}
+
+@media print {
+  .copy-source-toggle {
+    display: none;
+  }
+}

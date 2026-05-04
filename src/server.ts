@@ -263,7 +263,17 @@ async function serveMarkdownFile(
 ): Promise<void> {
   const source = await readFile(filePath, "utf8");
   const fallbackTitle = filePath.split(/[\\/]/).pop()?.replace(MD_RE, "") ?? "";
-  return servePage(res, md, source, fallbackTitle, boundingBox, directory, currentUrlPath, live);
+  return servePage(
+    res,
+    md,
+    source,
+    fallbackTitle,
+    boundingBox,
+    directory,
+    currentUrlPath,
+    live,
+    true,
+  );
 }
 
 function serveDirectoryListing(
@@ -276,7 +286,7 @@ function serveDirectoryListing(
   live: LiveReloadHandle | null,
 ): Promise<void> {
   const source = buildDirectoryListing(dirPath, urlPath);
-  return servePage(res, md, source, urlPath, boundingBox, directory, urlPath, live);
+  return servePage(res, md, source, urlPath, boundingBox, directory, urlPath, live, false);
 }
 
 /**
@@ -326,6 +336,7 @@ async function servePage(
   directory: string,
   currentUrlPath: string,
   live: LiveReloadHandle | null,
+  embedSource: boolean,
 ): Promise<void> {
   const { html, title } = render(md, source);
 
@@ -341,11 +352,17 @@ async function servePage(
     // tree build can fail on permissions / racy fs — degrade silently
   }
 
+  // Same `</script>` escape as fileIndex; the client unescapes via JSON.parse.
+  const sourceJson = embedSource
+    ? JSON.stringify(source).replace(/<\/(script|!--)/gi, "<\\/$1")
+    : "";
+
   const values: LayoutValues = {
     Title: escapeHtml(title || fallbackTitle),
     Content: html,
     FileExplorer: explorer,
     FileIndex: fileIndex,
+    Source: sourceJson,
     BoundingBox: boundingBox,
   };
   let out = renderLayout(values);
