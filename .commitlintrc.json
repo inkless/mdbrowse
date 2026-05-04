@@ -5,6 +5,7 @@
       2,
       "always",
       ["feat", "fix", "perf", "docs", "test", "ci", "chore", "refactor", "build"]
-    ]
+    ],
+    "footer-leading-blank": [0]
   }
 }
