@@ -15,6 +15,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v0.2.3)'
+        required: true
+        type: string
 
 jobs:
   publish:
@@ -24,6 +29,10 @@ jobs:
       id-token: write # for npm provenance
     steps:
       - uses: actions/checkout@v4
+        with:
+          # On workflow_dispatch we receive `inputs.tag`; on push the tag
+          # ref is already the trigger so default checkout is correct.
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -37,11 +46,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Verify tag matches package.json version
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
-          TAG_VERSION=${GITHUB_REF_NAME#v}
+          TAG_NAME="${INPUT_TAG:-$REF_NAME}"
+          TAG_VERSION=${TAG_NAME#v}
           if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::package.json version ($PKG_VERSION) does not match tag ($TAG_VERSION)"
+            echo "::error::package.json version ($PKG_VERSION) does not match tag ($TAG_NAME)"
             exit 1
           fi
 
