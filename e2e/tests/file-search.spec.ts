@@ -33,6 +33,31 @@ test.describe("file search", () => {
     await expect(page.locator("h1")).toContainText("Deploy runbook");
   });
 
+  test("backdrop click closes the dialog without navigating", async ({ page }) => {
+    await page.goto("/README.md");
+    const dialog = page.locator("dialog.mdbrowse-search");
+    await page.keyboard.press("Meta+K");
+    await expect(dialog).toBeVisible();
+
+    // Element.click() dispatches a click event on the dialog itself
+    // with event.target === dialog — exactly the backdrop-click shape
+    // our close handler keys off. Avoids coordinate-hunting around the
+    // dialog content box.
+    await dialog.evaluate((d) => d.click());
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/README\.md$/);
+  });
+
+  test("clicking inside the dialog content does NOT close it", async ({ page }) => {
+    await page.goto("/README.md");
+    const dialog = page.locator("dialog.mdbrowse-search");
+    await page.keyboard.press("Meta+K");
+    await expect(dialog).toBeVisible();
+
+    await dialog.locator(".mdbrowse-search__input").click();
+    await expect(dialog).toBeVisible();
+  });
+
   test("Escape closes the dialog without navigating", async ({ page }) => {
     await page.goto("/README.md");
     const dialog = page.locator("dialog.mdbrowse-search");
