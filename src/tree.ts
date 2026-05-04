@@ -11,19 +11,47 @@ export interface TreeNode {
 const MD_EXT = /\.(md|markdown)$/i;
 
 /**
- * Walk a directory and build a tree of markdown files. Hidden entries
- * (`.foo`) are skipped. Directories are kept only when they recursively
- * contain at least one markdown file. Children are sorted: directories
- * first (case-insensitive alpha), then files (same).
+ * Conventional build / dependency / cache directories that almost no
+ * one wants in the sidebar or `Cmd+K` search. Skipped by default;
+ * pass `{ all: true }` to disable.
+ */
+export const DEFAULT_IGNORED_DIRS: ReadonlySet<string> = new Set([
+  "node_modules",
+  "dist",
+  "build",
+  "out",
+  ".next",
+  ".nuxt",
+  ".cache",
+  ".turbo",
+  "target",
+  "coverage",
+  "vendor",
+]);
+
+export interface BuildTreeOptions {
+  /**
+   * Disable both the dotfile filter and the `DEFAULT_IGNORED_DIRS`
+   * filter — show every directory regardless of name. Off by default.
+   */
+  all?: boolean;
+}
+
+/**
+ * Walk a directory and build a tree of markdown files. By default,
+ * hidden entries (`.foo`) and conventional build/dep dirs (see
+ * `DEFAULT_IGNORED_DIRS`) are skipped. Directories are kept only when
+ * they recursively contain at least one markdown file. Children are
+ * sorted: directories first (case-insensitive alpha), then files (same).
  *
  * URL paths use forward slashes regardless of platform — they're for the
  * browser's `<a href>` attribute, not the filesystem.
  */
-export function buildTree(root: string): TreeNode {
-  return buildNode(root, "");
+export function buildTree(root: string, opts: BuildTreeOptions = {}): TreeNode {
+  return buildNode(root, "", opts.all ?? false);
 }
 
-function buildNode(absPath: string, relUrlPath: string): TreeNode {
+function buildNode(absPath: string, relUrlPath: string, all: boolean): TreeNode {
   const info = statSync(absPath);
 
   const node: TreeNode = {
@@ -46,7 +74,10 @@ function buildNode(absPath: string, relUrlPath: string): TreeNode {
   const files: TreeNode[] = [];
 
   for (const name of names) {
-    if (name.startsWith(".")) continue;
+    if (!all) {
+      if (name.startsWith(".")) continue;
+      if (DEFAULT_IGNORED_DIRS.has(name)) continue;
+    }
 
     const childAbs = join(absPath, name);
     const childRel = posix.join(relUrlPath, name);
@@ -59,7 +90,7 @@ function buildNode(absPath: string, relUrlPath: string): TreeNode {
     }
 
     if (childInfo.isDirectory()) {
-      const child = buildNode(childAbs, childRel);
+      const child = buildNode(childAbs, childRel, all);
       if (hasMarkdown(child)) dirs.push(child);
       continue;
     }

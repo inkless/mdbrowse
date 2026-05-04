@@ -58,6 +58,9 @@ Options:
       --bounding-box    Wrap content in GitHub bounding box (default)
       --no-bounding-box Disable bounding box
       --no-reload       Disable browser auto-reload on file changes
+      --all             Show every directory in the sidebar + ⌘K search,
+                        including dotfiles and node_modules / dist / etc.
+                        (off by default)
   -h, --help            Display help
 ```
 

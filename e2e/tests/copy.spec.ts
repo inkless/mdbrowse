@@ -1,4 +1,4 @@
-import { type Page, expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 // We don't use clipboard.readText() — that triggers a permission prompt
 // which is fragile in CI. Instead we replace navigator.clipboard with a

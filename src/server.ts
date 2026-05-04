@@ -38,6 +38,12 @@ export interface ServeOptions {
    * If omitted, auto-detected from `git remote get-url origin` in `directory`.
    */
   repository?: string;
+  /**
+   * Show every directory in the sidebar + `Cmd+K` search regardless of
+   * name. By default, dotfiles and `tree.DEFAULT_IGNORED_DIRS`
+   * (`node_modules`, `dist`, etc.) are hidden. Off by default.
+   */
+  all?: boolean;
   /** Render options forwarded to `createRendererWithHighlighting`. */
   renderOptions?: RenderOptions;
 }
@@ -78,6 +84,7 @@ export async function serveMarkdown(
   const boundingBox = options.boundingBox ?? true;
   const browser = options.browser ?? true;
   const reloadEnabled = options.reload ?? true;
+  const all = options.all ?? false;
   const repository = options.repository ?? detectGitHubRepository(directory);
 
   const md = await createRendererWithHighlighting({
@@ -87,7 +94,7 @@ export async function serveMarkdown(
 
   let live: LiveReloadHandle | null = null;
   const server = createServer((req, res) => {
-    handle(req, res, directory, md, boundingBox, live).catch((err) => {
+    handle(req, res, directory, md, boundingBox, live, all).catch((err) => {
       console.error("[mdbrowse] handler error:", err);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "text/plain" });
@@ -197,6 +204,7 @@ async function handle(
   md: MarkdownIt,
   boundingBox: boolean,
   live: LiveReloadHandle | null,
+  all: boolean,
 ): Promise<void> {
   const urlPath = decodeURIComponent((req.url ?? "/").split("?", 1)[0] ?? "/");
 
@@ -223,7 +231,7 @@ async function handle(
   }
 
   if (info.isFile() && MD_RE.test(filePath)) {
-    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath, live);
+    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath, live, all);
   }
 
   if (info.isDirectory()) {
@@ -241,12 +249,12 @@ async function handle(
     try {
       const readmeInfo = statSync(readmePath);
       if (readmeInfo.isFile()) {
-        return serveMarkdownFile(res, md, readmePath, boundingBox, directory, urlPath, live);
+        return serveMarkdownFile(res, md, readmePath, boundingBox, directory, urlPath, live, all);
       }
     } catch {
       /* no README — fall through to listing */
     }
-    return serveDirectoryListing(res, md, filePath, urlPath, boundingBox, directory, live);
+    return serveDirectoryListing(res, md, filePath, urlPath, boundingBox, directory, live, all);
   }
 
   return serveFile(res, filePath);
@@ -260,6 +268,7 @@ async function serveMarkdownFile(
   directory: string,
   currentUrlPath: string,
   live: LiveReloadHandle | null,
+  all: boolean,
 ): Promise<void> {
   const source = await readFile(filePath, "utf8");
   const fallbackTitle = filePath.split(/[\\/]/).pop()?.replace(MD_RE, "") ?? "";
@@ -273,6 +282,7 @@ async function serveMarkdownFile(
     currentUrlPath,
     live,
     true,
+    all,
   );
 }
 
@@ -284,9 +294,10 @@ function serveDirectoryListing(
   boundingBox: boolean,
   directory: string,
   live: LiveReloadHandle | null,
+  all: boolean,
 ): Promise<void> {
   const source = buildDirectoryListing(dirPath, urlPath);
-  return servePage(res, md, source, urlPath, boundingBox, directory, urlPath, live, false);
+  return servePage(res, md, source, urlPath, boundingBox, directory, urlPath, live, false, all);
 }
 
 /**
@@ -337,13 +348,14 @@ async function servePage(
   currentUrlPath: string,
   live: LiveReloadHandle | null,
   embedSource: boolean,
+  all: boolean,
 ): Promise<void> {
   const { html, title } = render(md, source);
 
   let explorer = "";
   let fileIndex = "";
   try {
-    const tree = buildTree(directory);
+    const tree = buildTree(directory, { all });
     explorer = renderTree(tree, currentUrlPath);
     // Inline JSON for the client-side file-search modal. Closing `</`
     // sequences must be escaped so the script tag doesn't end early.

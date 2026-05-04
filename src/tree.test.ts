@@ -47,6 +47,37 @@ describe("buildTree", () => {
     expect(got).toEqual(["docs/ [dir]", "docs/guide.md", "/README.md", "/zzz.md"]);
   });
 
+  it("filters out conventional build / dependency dirs by default", () => {
+    writeFileSync(join(dir, "README.md"), "# r\n");
+    mkdirSync(join(dir, "node_modules"));
+    writeFileSync(join(dir, "node_modules", "junk.md"), "# j\n");
+    mkdirSync(join(dir, "dist"));
+    writeFileSync(join(dir, "dist", "build.md"), "# b\n");
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "guide.md"), "# g\n");
+
+    const got = flatten(buildTree(dir));
+    // node_modules and dist should be hidden; docs/ and the README stay.
+    expect(got).toEqual(["docs/ [dir]", "docs/guide.md", "/README.md"]);
+  });
+
+  it("includes ignored dirs (and dotfiles) when `all: true`", () => {
+    writeFileSync(join(dir, "README.md"), "# r\n");
+    mkdirSync(join(dir, "node_modules"));
+    writeFileSync(join(dir, "node_modules", "junk.md"), "# j\n");
+    mkdirSync(join(dir, ".hidden"));
+    writeFileSync(join(dir, ".hidden", "secret.md"), "# s\n");
+
+    const tree = buildTree(dir, { all: true });
+    const dirNames = tree.children.filter((c) => c.isDir).map((c) => c.name);
+    expect(dirNames).toContain("node_modules");
+    expect(dirNames).toContain(".hidden");
+
+    const flat = flattenTree(tree).map((e) => e.path);
+    expect(flat).toContain("/node_modules/junk.md");
+    expect(flat).toContain("/.hidden/secret.md");
+  });
+
   it("recurses into nested directories", () => {
     mkdirSync(join(dir, "a"));
     mkdirSync(join(dir, "a", "b"));

@@ -22,6 +22,7 @@ interface ServeCliOptions {
   port: number;
   boundingBox: boolean;
   reload: boolean;
+  all: boolean;
 }
 
 export function createProgram(): Command {
@@ -41,6 +42,11 @@ export function createProgram(): Command {
     .option("--bounding-box", "Wrap content in GitHub bounding box", true)
     .option("--no-bounding-box", "Disable bounding box")
     .option("--no-reload", "Disable browser auto-reload on file changes")
+    .option(
+      "--all",
+      "Show every directory in the sidebar + ⌘K search, including dotfiles and node_modules / dist / build / etc. (off by default)",
+      false,
+    )
     .action(async (file: string | undefined, opts: ServeCliOptions) => {
       await serveMarkdown(file ?? null, {
         host: opts.host,
@@ -48,6 +54,7 @@ export function createProgram(): Command {
         browser: opts.browser,
         boundingBox: opts.boundingBox,
         reload: opts.reload,
+        all: opts.all,
       });
     });
 
