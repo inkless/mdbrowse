@@ -1,38 +1,68 @@
 name: Release
 
-# Triggered by pushing a tag like `v0.1.0`. The version in package.json must
-# match the tag (without the `v` prefix). Authenticates to npm via Trusted
-# Publishing (OIDC) — configure on npmjs.com under the package's Settings →
-# Trusted Publisher. No NPM_TOKEN secret needed.
+# One workflow, two jobs. The first runs Release Please on every push to
+# `main` — it maintains the open Release PR and, when that PR merges,
+# creates the `vX.Y.Z` tag + GitHub Release. The second job is gated on
+# Release Please's `release_created` output and publishes to npm using
+# the tag in the same workflow run, side-stepping GitHub's well-known
+# rule that a tag pushed by `GITHUB_TOKEN` cannot itself trigger another
+# workflow. This is the pattern recommended in the release-please-action
+# README and is the standard for npm packages on Trusted Publishing.
 #
-# Also exposes a manual `workflow_dispatch` trigger as an escape hatch:
-# when Release Please cuts a tag with the default `GITHUB_TOKEN`, GitHub
-# refuses to fire downstream workflows on that push (loop-prevention).
-# Re-publishing or first-time-after-PAT-setup runs go through here:
-#   gh workflow run release.yml --ref vX.Y.Z
+# `workflow_dispatch` is exposed as a manual escape hatch — re-publish a
+# tag (e.g. after a registry hiccup) with:
+#   gh workflow run release.yml -f tag=v0.2.3
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to publish (e.g. v0.2.3)'
+        description: "Tag to (re)publish, e.g. v0.2.3 — only used by manual dispatch"
         required: true
         type: string
 
 jobs:
-  publish:
+  release-please:
+    # Only the push path needs Release Please; manual dispatch goes
+    # straight to publish for an existing tag.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    # Run when:
+    #  - release-please succeeded AND a release was actually created, OR
+    #  - this run is a manual workflow_dispatch (release-please skipped).
+    if: |
+      always() &&
+      (
+        (needs.release-please.result == 'success' && needs.release-please.outputs.release_created == 'true')
+        || github.event_name == 'workflow_dispatch'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
       id-token: write # for npm provenance
     steps:
       - uses: actions/checkout@v4
         with:
-          # On workflow_dispatch we receive `inputs.tag`; on push the tag
-          # ref is already the trigger so default checkout is correct.
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          # On push: check out the tag Release Please just created.
+          # On workflow_dispatch: check out the tag the operator named.
+          ref: ${{ github.event.inputs.tag || needs.release-please.outputs.tag_name }}
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -44,19 +74,6 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-
-      - name: Verify tag matches package.json version
-        env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          TAG_NAME="${INPUT_TAG:-$REF_NAME}"
-          TAG_VERSION=${TAG_NAME#v}
-          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::package.json version ($PKG_VERSION) does not match tag ($TAG_NAME)"
-            exit 1
-          fi
 
       - run: pnpm lint
       - run: pnpm typecheck
@@ -75,7 +92,3 @@ jobs:
       # benefits from the hook as a safety net.
       - name: Publish via npm with trusted publishing
         run: npm publish --access public --provenance --ignore-scripts
-
-      # GitHub Release for the tag is created by Release Please when it
-      # merges its Release PR. We don't create one here — auto-generated
-      # PR-title notes would overwrite the changelog-driven release body.
