@@ -2,6 +2,13 @@
 
 All notable changes to `@inkless/mdbrowse` are documented in this file. From 0.2.3 onward this file is maintained automatically by [Release Please](https://github.com/googleapis/release-please) from Conventional Commit messages on `main`. The 0.1.0 → 0.2.2 entries below were backfilled by hand.
 
+## [0.2.5](https://github.com/inkless/mdbrowse/compare/v0.2.4...v0.2.5) (2026-05-10)
+
+
+### Features
+
+* render source files with shiki highlighting and --code sidebar flag ([0303052](https://github.com/inkless/mdbrowse/commit/03030524930924881782c5b4ac5025106881b3e7))
+
 ## [0.2.4](https://github.com/inkless/mdbrowse/compare/v0.2.3...v0.2.4) (2026-05-04)
 
 
