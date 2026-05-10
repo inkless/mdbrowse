@@ -1,5 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import { basename, join, posix } from "node:path";
+import { isCodeFile } from "./code.js";
 
 export interface TreeNode {
   name: string;
@@ -35,23 +36,32 @@ export interface BuildTreeOptions {
    * filter — show every directory regardless of name. Off by default.
    */
   all?: boolean;
+  /**
+   * Also list recognized source/config files (TS/JS/Python/Go/JSON/...) in
+   * the sidebar + `Cmd+K` search. The set of recognized extensions matches
+   * `code.ts`'s language map. Off by default — markdown-only sidebars stay
+   * uncluttered.
+   */
+  code?: boolean;
 }
 
 /**
- * Walk a directory and build a tree of markdown files. By default,
- * hidden entries (`.foo`) and conventional build/dep dirs (see
- * `DEFAULT_IGNORED_DIRS`) are skipped. Directories are kept only when
- * they recursively contain at least one markdown file. Children are
- * sorted: directories first (case-insensitive alpha), then files (same).
+ * Walk a directory and build a tree of files. By default only markdown
+ * files (`.md`/`.markdown`) are listed; with `code: true`, recognized
+ * source/config files are listed too. Hidden entries (`.foo`) and
+ * conventional build/dep dirs (`DEFAULT_IGNORED_DIRS`) are skipped unless
+ * `all: true`. Directories are kept only when they recursively contain at
+ * least one listed file. Children are sorted: directories first
+ * (case-insensitive alpha), then files (same).
  *
  * URL paths use forward slashes regardless of platform — they're for the
  * browser's `<a href>` attribute, not the filesystem.
  */
 export function buildTree(root: string, opts: BuildTreeOptions = {}): TreeNode {
-  return buildNode(root, "", opts.all ?? false);
+  return buildNode(root, "", opts.all ?? false, opts.code ?? false);
 }
 
-function buildNode(absPath: string, relUrlPath: string, all: boolean): TreeNode {
+function buildNode(absPath: string, relUrlPath: string, all: boolean, code: boolean): TreeNode {
   const info = statSync(absPath);
 
   const node: TreeNode = {
@@ -90,12 +100,12 @@ function buildNode(absPath: string, relUrlPath: string, all: boolean): TreeNode 
     }
 
     if (childInfo.isDirectory()) {
-      const child = buildNode(childAbs, childRel, all);
-      if (hasMarkdown(child)) dirs.push(child);
+      const child = buildNode(childAbs, childRel, all, code);
+      if (hasListedFile(child, code)) dirs.push(child);
       continue;
     }
 
-    if (childInfo.isFile() && MD_EXT.test(name)) {
+    if (childInfo.isFile() && isListedFile(name, code)) {
       files.push({
         name,
         urlPath: `/${childRel.replace(/^\/+/, "")}`,
@@ -113,9 +123,15 @@ function buildNode(absPath: string, relUrlPath: string, all: boolean): TreeNode 
   return node;
 }
 
-function hasMarkdown(node: TreeNode): boolean {
-  if (!node.isDir) return MD_EXT.test(node.name);
-  return node.children.some(hasMarkdown);
+function isListedFile(name: string, code: boolean): boolean {
+  if (MD_EXT.test(name)) return true;
+  if (code && isCodeFile(name)) return true;
+  return false;
+}
+
+function hasListedFile(node: TreeNode, code: boolean): boolean {
+  if (!node.isDir) return isListedFile(node.name, code);
+  return node.children.some((c) => hasListedFile(c, code));
 }
 
 export interface FileEntry {
@@ -126,9 +142,10 @@ export interface FileEntry {
 }
 
 /**
- * Flatten a tree into a path-sorted list of markdown file entries. Used
- * by the client-side file-search modal to do fzf-style matching without a
- * round-trip to the server.
+ * Flatten a tree into a path-sorted list of file entries. Used by the
+ * client-side file-search modal to do fzf-style matching without a
+ * round-trip to the server. Includes every file present in the tree —
+ * whichever extensions made it through `buildTree`'s filter end up here.
  */
 export function flattenTree(root: TreeNode): FileEntry[] {
   const out: FileEntry[] = [];
@@ -139,9 +156,7 @@ export function flattenTree(root: TreeNode): FileEntry[] {
 
 function walk(node: TreeNode, out: FileEntry[]): void {
   if (!node.isDir) {
-    if (MD_EXT.test(node.name)) {
-      out.push({ path: node.urlPath, name: node.name });
-    }
+    out.push({ path: node.urlPath, name: node.name });
     return;
   }
   for (const child of node.children) walk(child, out);

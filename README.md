@@ -43,6 +43,7 @@ mdbrowse --no-browser          # don't auto-open the browser
 mdbrowse --no-reload           # disable live reload on file changes
 mdbrowse -H 0.0.0.0            # bind to all interfaces (LAN access)
 mdbrowse --all                 # also include dotfiles + node_modules / dist / …
+mdbrowse --code                # also list source files (.ts / .py / .go / …) in the sidebar
 ```
 
 The default URL is `http://localhost:6419/`. Hit **Ctrl-C** to stop.
@@ -71,6 +72,11 @@ Options:
       --all             Show every directory in the sidebar + ⌘K search,
                         including dotfiles and node_modules / dist / etc.
                         (off by default)
+      --code            Also list recognized source files (.ts / .py / .go /
+                        .json / Dockerfile / …) in the sidebar + ⌘K search.
+                        Code files are always rendered when navigated to
+                        directly — this flag only controls sidebar listing.
+                        (off by default)
   -h, --help            Display help
 ```
 
@@ -78,6 +84,7 @@ Options:
 
 - 📄 **GitHub-styled rendering** — heading anchors, GFM tables, strikethrough, autolinking, footnotes, task lists
 - 🎨 **Syntax highlighting** via [shiki](https://shiki.style) with built-in `github-light` and `github-dark` themes (dual-theme via CSS variables, swaps on theme toggle)
+- 🧾 **Browse source files too** — navigate to `.ts`, `.py`, `.go`, `.json`, `.yaml`, `Dockerfile`, etc. and they render in the same chrome with shiki highlighting. Unrecognized text files render as plaintext in the layout; binary files stream raw; `.html` / `.svg` keep rendering natively. Pass `--code` to also list source files in the sidebar + ⌘K search.
 - 📦 **GitHub-flavored alerts** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`
 - 🔗 **Issue/PR references** — `#123` (auto-linked when run inside a GitHub repo) and `owner/repo#123`
 - 🧩 **Mermaid diagrams** rendered client-side

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import type MarkdownIt from "markdown-it";
 import mime from "mime-types";
 import open from "open";
+import { detectCodeLanguage, wrapAsFencedMarkdown } from "./code.js";
 import { escapeHtml, type LayoutValues, renderLayout } from "./layout.js";
 import { attachLiveReload, type LiveReloadHandle } from "./live-reload.js";
 import { detectGitHubRepository } from "./plugins/git-remote.js";
@@ -44,6 +45,13 @@ export interface ServeOptions {
    * (`node_modules`, `dist`, etc.) are hidden. Off by default.
    */
   all?: boolean;
+  /**
+   * Also list recognized source/config files (TS/JS/Python/Go/JSON/…) in
+   * the sidebar + `Cmd+K` search. Code files always render when navigated
+   * to directly; this flag only controls whether they show up in the
+   * sidebar. Off by default — markdown-only sidebars stay uncluttered.
+   */
+  code?: boolean;
   /** Render options forwarded to `createRendererWithHighlighting`. */
   renderOptions?: RenderOptions;
 }
@@ -85,6 +93,7 @@ export async function serveMarkdown(
   const browser = options.browser ?? true;
   const reloadEnabled = options.reload ?? true;
   const all = options.all ?? false;
+  const code = options.code ?? false;
   const repository = options.repository ?? detectGitHubRepository(directory);
 
   const md = await createRendererWithHighlighting({
@@ -94,7 +103,7 @@ export async function serveMarkdown(
 
   let live: LiveReloadHandle | null = null;
   const server = createServer((req, res) => {
-    handle(req, res, directory, md, boundingBox, live, all).catch((err) => {
+    handle(req, res, directory, md, boundingBox, live, all, code).catch((err) => {
       console.error("[mdbrowse] handler error:", err);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "text/plain" });
@@ -205,6 +214,7 @@ async function handle(
   boundingBox: boolean,
   live: LiveReloadHandle | null,
   all: boolean,
+  code: boolean,
 ): Promise<void> {
   const urlPath = decodeURIComponent((req.url ?? "/").split("?", 1)[0] ?? "/");
 
@@ -231,7 +241,30 @@ async function handle(
   }
 
   if (info.isFile() && MD_RE.test(filePath)) {
-    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath, live, all);
+    return serveMarkdownFile(res, md, filePath, boundingBox, directory, urlPath, live, all, code);
+  }
+
+  if (info.isFile()) {
+    // Try to render as text — either with a detected shiki language or as
+    // plain text. Binary/oversized files fall through to raw streaming.
+    const text = await readTextIfPossible(filePath, info.size);
+    if (text !== null) {
+      const lang = detectCodeLanguage(filePath) ?? "text";
+      return serveCodeFile(
+        res,
+        md,
+        filePath,
+        text,
+        lang,
+        boundingBox,
+        directory,
+        urlPath,
+        live,
+        all,
+        code,
+      );
+    }
+    return serveFile(res, filePath);
   }
 
   if (info.isDirectory()) {
@@ -249,15 +282,52 @@ async function handle(
     try {
       const readmeInfo = statSync(readmePath);
       if (readmeInfo.isFile()) {
-        return serveMarkdownFile(res, md, readmePath, boundingBox, directory, urlPath, live, all);
+        return serveMarkdownFile(
+          res,
+          md,
+          readmePath,
+          boundingBox,
+          directory,
+          urlPath,
+          live,
+          all,
+          code,
+        );
       }
     } catch {
       /* no README — fall through to listing */
     }
-    return serveDirectoryListing(res, md, filePath, urlPath, boundingBox, directory, live, all);
+    return serveDirectoryListing(
+      res,
+      md,
+      filePath,
+      urlPath,
+      boundingBox,
+      directory,
+      live,
+      all,
+      code,
+    );
   }
 
   return serveFile(res, filePath);
+}
+
+const TEXT_SNIFF_BYTES = 8000;
+const TEXT_FILE_MAX_BYTES = 5_000_000;
+
+/**
+ * Read a file as UTF-8 if it looks like text. Returns null for binary
+ * (NUL byte in the first ~8KB — git's heuristic) and for files larger
+ * than `TEXT_FILE_MAX_BYTES` (avoid slurping huge logs/CSVs into the
+ * highlighter).
+ */
+async function readTextIfPossible(filePath: string, size: number): Promise<string | null> {
+  if (size > TEXT_FILE_MAX_BYTES) return null;
+  const buf = await readFile(filePath);
+  const sample = buf.subarray(0, Math.min(TEXT_SNIFF_BYTES, buf.length));
+  if (sample.includes(0)) return null;
+  return buf.toString("utf8");
 }
 
 async function serveMarkdownFile(
@@ -269,6 +339,7 @@ async function serveMarkdownFile(
   currentUrlPath: string,
   live: LiveReloadHandle | null,
   all: boolean,
+  code: boolean,
 ): Promise<void> {
   const source = await readFile(filePath, "utf8");
   const fallbackTitle = filePath.split(/[\\/]/).pop()?.replace(MD_RE, "") ?? "";
@@ -281,8 +352,44 @@ async function serveMarkdownFile(
     directory,
     currentUrlPath,
     live,
-    true,
+    source,
     all,
+    code,
+  );
+}
+
+async function serveCodeFile(
+  res: ServerResponse,
+  md: MarkdownIt,
+  filePath: string,
+  source: string,
+  lang: string,
+  boundingBox: boolean,
+  directory: string,
+  currentUrlPath: string,
+  live: LiveReloadHandle | null,
+  all: boolean,
+  code: boolean,
+): Promise<void> {
+  const fallbackTitle = filePath.split(/[\\/]/).pop() ?? "";
+  // Re-use the markdown pipeline by wrapping the file in a fenced block —
+  // the existing shiki `highlight` callback turns this into a themed code
+  // listing (or plaintext when `lang === "text"`). Embed the *original*
+  // bytes (not the fenced wrapper) so the copy-source button hands the
+  // user back what's actually on disk.
+  const markdownSource = wrapAsFencedMarkdown(source, lang);
+  return servePage(
+    res,
+    md,
+    markdownSource,
+    fallbackTitle,
+    boundingBox,
+    directory,
+    currentUrlPath,
+    live,
+    source,
+    all,
+    code,
   );
 }
 
@@ -295,9 +402,22 @@ function serveDirectoryListing(
   directory: string,
   live: LiveReloadHandle | null,
   all: boolean,
+  code: boolean,
 ): Promise<void> {
   const source = buildDirectoryListing(dirPath, urlPath);
-  return servePage(res, md, source, urlPath, boundingBox, directory, urlPath, live, false, all);
+  return servePage(
+    res,
+    md,
+    source,
+    urlPath,
+    boundingBox,
+    directory,
+    urlPath,
+    live,
+    null,
+    all,
+    code,
+  );
 }
 
 /**
@@ -347,15 +467,16 @@ async function servePage(
   directory: string,
   currentUrlPath: string,
   live: LiveReloadHandle | null,
-  embedSource: boolean,
+  sourceToEmbed: string | null,
   all: boolean,
+  code: boolean,
 ): Promise<void> {
   const { html, title } = render(md, source);
 
   let explorer = "";
   let fileIndex = "";
   try {
-    const tree = buildTree(directory, { all });
+    const tree = buildTree(directory, { all, code });
     explorer = renderTree(tree, currentUrlPath);
     // Inline JSON for the client-side file-search modal. Closing `</`
     // sequences must be escaped so the script tag doesn't end early.
@@ -365,9 +486,10 @@ async function servePage(
   }
 
   // Same `</script>` escape as fileIndex; the client unescapes via JSON.parse.
-  const sourceJson = embedSource
-    ? JSON.stringify(source).replace(/<\/(script|!--)/gi, "<\\/$1")
-    : "";
+  const sourceJson =
+    sourceToEmbed !== null
+      ? JSON.stringify(sourceToEmbed).replace(/<\/(script|!--)/gi, "<\\/$1")
+      : "";
 
   const values: LayoutValues = {
     Title: escapeHtml(title || fallbackTitle),

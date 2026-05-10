@@ -12,6 +12,18 @@ beforeAll(async () => {
   tmp = mkdtempSync(join(tmpdir(), "mdbrowse-server-"));
   writeFileSync(join(tmp, "README.md"), "# hello\n\nbody with `#42` and ```js\nconst x = 1\n```\n");
   writeFileSync(join(tmp, "image.txt"), "not markdown");
+  // Code/config files for the syntax-highlighting fallback path.
+  writeFileSync(join(tmp, "sample.ts"), "export const greet = (n: string): string => n;\n");
+  writeFileSync(join(tmp, "config.json"), '{\n  "name": "mdbrowse"\n}\n');
+  // Source containing triple backticks — fence picker must escape this
+  // so the synthetic wrapper doesn't terminate early.
+  writeFileSync(join(tmp, "fences.sh"), "echo '```'\necho 'still inside'\n");
+  writeFileSync(join(tmp, "Dockerfile"), "FROM node:20\nRUN echo hi\n");
+  // Binary file — must stream raw (NUL byte trips the text sniffer).
+  writeFileSync(
+    join(tmp, "blob.bin"),
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01, 0x02, 0x03]),
+  );
   // Subdir with README.md — directory request with trailing slash should
   // serve this file (no redirect loop, no 404).
   mkdirSync(join(tmp, "withreadme"));
@@ -78,11 +90,129 @@ describe("serveMarkdown", () => {
     expect([403, 404]).toContain(res.status);
   });
 
-  it("serves regular files as static fallback", async () => {
+  it("renders plain .txt files in the layout as plaintext (no shiki coloring spans, no fence breakouts)", async () => {
     const baseUrl = handle.url.replace(/README\.md$/, "");
     const res = await fetch(`${baseUrl}image.txt`);
     expect(res.status).toBe(200);
-    expect(await res.text()).toBe("not markdown");
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    expect(body).toContain("<!doctype html>");
+    expect(body).toContain("<title>image.txt</title>");
+    // Original bytes round-trip through the copy-source embed.
+    const match = body.match(
+      /<script type="application\/json" id="mdbrowse-source">([\s\S]*?)<\/script>/,
+    );
+    expect(match).not.toBeNull();
+    if (!match) return;
+    expect(JSON.parse(match[1] ?? "")).toBe("not markdown");
+  });
+
+  it("renders a TypeScript source file with shiki highlighting wrapped in the layout", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}sample.ts`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    expect(body).toContain("<!doctype html>");
+    expect(body).toContain("<title>sample.ts</title>");
+    // Shiki output is present (themed code block).
+    expect(body).toContain("shiki");
+    // Embedded source should be the raw file bytes, not the synthetic
+    // markdown wrapper — so the copy-source button hands back what's on
+    // disk. The fence backticks must NOT appear in the embedded payload.
+    const match = body.match(
+      /<script type="application\/json" id="mdbrowse-source">([\s\S]*?)<\/script>/,
+    );
+    expect(match).not.toBeNull();
+    if (!match) return;
+    const embedded = JSON.parse(match[1] ?? "");
+    expect(embedded).toContain("export const greet");
+    expect(embedded).not.toMatch(/^```/);
+  });
+
+  it("renders a JSON file with shiki highlighting", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}config.json`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    expect(body).toContain("shiki");
+    expect(body).toContain("<title>config.json</title>");
+  });
+
+  it("renders bare filenames like Dockerfile via the FILENAME_LANG map", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}Dockerfile`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const body = await res.text();
+    expect(body).toContain("shiki");
+    expect(body).toContain("<title>Dockerfile</title>");
+  });
+
+  it("renders source containing triple backticks without terminating the synthetic fence early", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}fences.sh`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    // If the fence terminated early, the trailing line would render
+    // outside the code block as markdown — i.e. as a top-level paragraph.
+    // Asserting both lines appear inside a shiki block is enough.
+    expect(body).toContain("shiki");
+    expect(body).toContain("still inside");
+    // And neither line should appear as a standalone markdown paragraph.
+    expect(body).not.toMatch(/<p>still inside<\/p>/);
+  });
+
+  it("streams binary files raw (NUL-byte sniff trips before layout wrap)", async () => {
+    const baseUrl = handle.url.replace(/README\.md$/, "");
+    const res = await fetch(`${baseUrl}blob.bin`);
+    expect(res.status).toBe(200);
+    // Binary path: octet-stream, NOT layout-wrapped HTML.
+    expect(res.headers.get("content-type")).not.toMatch(/text\/html/);
+    const body = Buffer.from(await res.arrayBuffer());
+    expect(body[0]).toBe(0x89);
+    expect(body[4]).toBe(0x00);
+  });
+
+  it("omits code files from the sidebar by default", async () => {
+    const res = await fetch(handle.url);
+    const body = await res.text();
+    // The sidebar tree is rendered into the layout's <aside>. sample.ts /
+    // config.json / fences.sh should NOT appear as <a href> entries.
+    expect(body).not.toMatch(/href="\/sample\.ts"/);
+    expect(body).not.toMatch(/href="\/config\.json"/);
+    // README + tricky.md (added in a later test) are markdown → always present.
+    expect(body).toMatch(/href="\/README\.md"/);
+  });
+
+  it("includes code files in the sidebar when serveMarkdown is called with `code: true`", async () => {
+    const codeHandle = await serveMarkdown(null, {
+      directory: tmp,
+      port: 0,
+      browser: false,
+      reload: false,
+      code: true,
+    });
+    try {
+      const res = await fetch(codeHandle.url);
+      const body = await res.text();
+      expect(body).toMatch(/href="\/sample\.ts"/);
+      expect(body).toMatch(/href="\/config\.json"/);
+      expect(body).toMatch(/href="\/Dockerfile"/);
+      // The ⌘K search index (inline JSON) should also list them.
+      const fileIndexMatch = body.match(
+        /<script type="application\/json" id="mdbrowse-file-index">([\s\S]*?)<\/script>/,
+      );
+      expect(fileIndexMatch).not.toBeNull();
+      if (!fileIndexMatch) return;
+      const entries = JSON.parse(fileIndexMatch[1] ?? "") as Array<{ path: string }>;
+      const paths = entries.map((e) => e.path);
+      expect(paths).toContain("/sample.ts");
+      expect(paths).toContain("/Dockerfile");
+    } finally {
+      await codeHandle.close();
+    }
   });
 
   it("serves a subdirectory's README.md when requested with a trailing slash", async () => {

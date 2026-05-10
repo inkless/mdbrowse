@@ -78,6 +78,36 @@ describe("buildTree", () => {
     expect(flat).toContain("/.hidden/secret.md");
   });
 
+  it("includes recognized code files when `code: true`, plus dirs that only contain code", () => {
+    writeFileSync(join(dir, "README.md"), "# r\n");
+    writeFileSync(join(dir, "build.ts"), "export {};\n");
+    writeFileSync(join(dir, "config.json"), "{}\n");
+    writeFileSync(join(dir, "Dockerfile"), "FROM node\n");
+    writeFileSync(join(dir, "photo.png"), "binary"); // not recognized
+    mkdirSync(join(dir, "src"));
+    writeFileSync(join(dir, "src", "index.ts"), "export {};\n");
+
+    const tree = buildTree(dir, { code: true });
+    const flat = flattenTree(tree).map((e) => e.path);
+    expect(flat).toContain("/README.md");
+    expect(flat).toContain("/build.ts");
+    expect(flat).toContain("/config.json");
+    expect(flat).toContain("/Dockerfile");
+    expect(flat).toContain("/src/index.ts");
+    // Unknown extension (and binary-ish) is NOT pulled in by the code flag.
+    expect(flat).not.toContain("/photo.png");
+  });
+
+  it("default mode (no `code` flag) excludes code files and code-only dirs", () => {
+    writeFileSync(join(dir, "README.md"), "# r\n");
+    writeFileSync(join(dir, "build.ts"), "export {};\n");
+    mkdirSync(join(dir, "src"));
+    writeFileSync(join(dir, "src", "only-code.ts"), "export {};\n");
+
+    const flat = flattenTree(buildTree(dir)).map((e) => e.path);
+    expect(flat).toEqual(["/README.md"]);
+  });
+
   it("recurses into nested directories", () => {
     mkdirSync(join(dir, "a"));
     mkdirSync(join(dir, "a", "b"));

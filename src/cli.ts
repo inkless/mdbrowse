@@ -23,6 +23,7 @@ interface ServeCliOptions {
   boundingBox: boolean;
   reload: boolean;
   all: boolean;
+  code: boolean;
 }
 
 export function createProgram(): Command {
@@ -50,6 +51,11 @@ export function createProgram(): Command {
       "Show every directory in the sidebar + ⌘K search, including dotfiles and node_modules / dist / build / etc. (off by default)",
       false,
     )
+    .option(
+      "--code",
+      "Also list recognized source files (.ts, .py, .go, .json, .yaml, Dockerfile, …) in the sidebar + ⌘K search (off by default; code files are always rendered when navigated to directly)",
+      false,
+    )
     .action(async (file: string | undefined, opts: ServeCliOptions) => {
       await serveMarkdown(file ?? null, {
         host: opts.host,
@@ -58,6 +64,7 @@ export function createProgram(): Command {
         boundingBox: opts.boundingBox,
         reload: opts.reload,
         all: opts.all,
+        code: opts.code,
       });
     });
 
