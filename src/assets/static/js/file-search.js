@@ -64,9 +64,11 @@
       moveSelection(-1);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      // Shift+Enter opens the result in a new tab and leaves the modal open,
-      // so you can fan out to several files in one pass.
-      navigateToSelected(e.shiftKey);
+      // Cmd/Ctrl+Enter opens the result in a new tab and leaves the modal open,
+      // so you can fan out to several files in one pass. Mirrors the
+      // Cmd/Ctrl+Click affordance on result rows (and the new-tab=Cmd/Ctrl
+      // convention, vs Shift which the browser reads as "new window").
+      navigateToSelected(e.metaKey || e.ctrlKey);
     }
     // Escape is handled natively by <dialog>.
   });
@@ -152,8 +154,11 @@
 
   // Navigate to `path`. When `newTab` is truthy, open it in a new tab and keep
   // the current page (and the search modal) intact; otherwise replace the
-  // current page. window.open() here runs synchronously inside a keydown/click
-  // handler, so it counts as a user gesture and won't trip popup blockers.
+  // current page. window.open(url, "_blank") opens a tab by default — the only
+  // modifier that the browser reinterprets as "new window" is Shift, which we
+  // intentionally don't bind (new-tab is Cmd/Ctrl, matching Cmd/Ctrl+Click).
+  // Runs synchronously inside the keydown/click handler, so it's a user gesture
+  // and won't trip popup blockers.
   function open(path, newTab) {
     if (newTab) window.open(path, "_blank");
     else location.assign(path);
@@ -211,13 +216,21 @@
   // Expose for tests.
   window.__mdbrowseSearch = { filter: filter, score: score };
 
+  // Used only to pick the modifier glyph in the hint (⌘ vs Ctrl).
+  function isMacLike() {
+    var p = (navigator.platform || navigator.userAgent || "").toLowerCase();
+    return p.indexOf("mac") !== -1 || p.indexOf("iphone") !== -1 || p.indexOf("ipad") !== -1;
+  }
+
   function buildDialog() {
     var d = document.createElement("dialog");
     d.className = "mdbrowse-search";
     d.innerHTML =
       '<div class="mdbrowse-search__input-row">' +
       '<input class="mdbrowse-search__input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type to search files…" aria-label="Search files" />' +
-      '<span class="mdbrowse-search__hint">⇧↵ new tab · Esc close</span>' +
+      '<span class="mdbrowse-search__hint">' +
+      (isMacLike() ? "⌘↵" : "Ctrl+↵") +
+      " new tab · Esc close</span>" +
       "</div>" +
       '<ul class="mdbrowse-search__results" role="listbox"></ul>' +
       '<div class="mdbrowse-search__empty" hidden>No matches</div>';
