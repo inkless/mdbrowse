@@ -69,6 +69,43 @@ test.describe("file search", () => {
     await expect(page).toHaveURL(/\/README\.md$/);
   });
 
+  test("Shift+Enter opens the selected file in a new tab, leaving the modal open", async ({
+    page,
+  }) => {
+    await page.goto("/README.md");
+    await page.keyboard.press("Meta+K");
+    await page.keyboard.type("runb");
+
+    const dialog = page.locator("dialog.mdbrowse-search");
+    const [popup] = await Promise.all([
+      page.context().waitForEvent("page"),
+      page.keyboard.press("Shift+Enter"),
+    ]);
+
+    await popup.waitForLoadState();
+    await expect(popup).toHaveURL(/\/runbooks\/deploy\.md$/);
+
+    // Original tab stayed put and the modal is still open for the next pick.
+    await expect(page).toHaveURL(/\/README\.md$/);
+    await expect(dialog).toBeVisible();
+  });
+
+  test("Cmd+Click opens the result in a new tab", async ({ page }) => {
+    await page.goto("/README.md");
+    await page.keyboard.press("Meta+K");
+    await page.keyboard.type("runb");
+
+    const first = page.locator("dialog.mdbrowse-search li.mdbrowse-search__result").first();
+    const [popup] = await Promise.all([
+      page.context().waitForEvent("page"),
+      first.click({ modifiers: ["Meta"] }),
+    ]);
+
+    await popup.waitForLoadState();
+    await expect(popup).toHaveURL(/\/runbooks\/deploy\.md$/);
+    await expect(page).toHaveURL(/\/README\.md$/);
+  });
+
   test("ArrowDown moves selection and Enter follows it", async ({ page }) => {
     await page.goto("/README.md");
     await page.keyboard.press("Meta+K");

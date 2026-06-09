@@ -64,7 +64,9 @@
       moveSelection(-1);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      navigateToSelected();
+      // Shift+Enter opens the result in a new tab and leaves the modal open,
+      // so you can fan out to several files in one pass.
+      navigateToSelected(e.shiftKey);
     }
     // Escape is handled natively by <dialog>.
   });
@@ -73,7 +75,9 @@
     var li = e.target instanceof Element ? e.target.closest("li") : null;
     if (!li) return;
     var path = li.getAttribute("data-path");
-    if (path) location.assign(path);
+    if (!path) return;
+    // Cmd/Ctrl+Click mirrors Shift+Enter: open in a new tab.
+    open(path, e.metaKey || e.ctrlKey);
   });
 
   function openDialog() {
@@ -141,9 +145,18 @@
     }
   }
 
-  function navigateToSelected() {
+  function navigateToSelected(newTab) {
     var entry = current[selectedIdx];
-    if (entry) location.assign(entry.path);
+    if (entry) open(entry.path, newTab);
+  }
+
+  // Navigate to `path`. When `newTab` is truthy, open it in a new tab and keep
+  // the current page (and the search modal) intact; otherwise replace the
+  // current page. window.open() here runs synchronously inside a keydown/click
+  // handler, so it counts as a user gesture and won't trip popup blockers.
+  function open(path, newTab) {
+    if (newTab) window.open(path, "_blank");
+    else location.assign(path);
   }
 
   /**
@@ -204,7 +217,7 @@
     d.innerHTML =
       '<div class="mdbrowse-search__input-row">' +
       '<input class="mdbrowse-search__input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type to search files…" aria-label="Search files" />' +
-      '<span class="mdbrowse-search__hint">Esc to close</span>' +
+      '<span class="mdbrowse-search__hint">⇧↵ new tab · Esc close</span>' +
       "</div>" +
       '<ul class="mdbrowse-search__results" role="listbox"></ul>' +
       '<div class="mdbrowse-search__empty" hidden>No matches</div>';
