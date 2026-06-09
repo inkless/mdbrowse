@@ -69,7 +69,7 @@ test.describe("file search", () => {
     await expect(page).toHaveURL(/\/README\.md$/);
   });
 
-  test("Shift+Enter opens the selected file in a new tab, leaving the modal open", async ({
+  test("Cmd+Enter opens the selected file in a new tab, leaving the modal open", async ({
     page,
   }) => {
     await page.goto("/README.md");
@@ -79,13 +79,11 @@ test.describe("file search", () => {
     const dialog = page.locator("dialog.mdbrowse-search");
     const [popup] = await Promise.all([
       page.context().waitForEvent("page"),
-      page.keyboard.press("Shift+Enter"),
+      page.keyboard.press("Meta+Enter"),
     ]);
 
     await popup.waitForLoadState();
     await expect(popup).toHaveURL(/\/runbooks\/deploy\.md$/);
-
-    // Original tab stayed put and the modal is still open for the next pick.
     await expect(page).toHaveURL(/\/README\.md$/);
     await expect(dialog).toBeVisible();
   });
