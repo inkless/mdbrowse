@@ -2,6 +2,18 @@
 
 All notable changes to `@inkless/mdbrowse` are documented in this file. From 0.2.3 onward this file is maintained automatically by [Release Please](https://github.com/googleapis/release-please) from Conventional Commit messages on `main`. The 0.1.0 → 0.2.2 entries below were backfilled by hand.
 
+## [0.2.6](https://github.com/inkless/mdbrowse/compare/v0.2.5...v0.2.6) (2026-06-09)
+
+
+### Features
+
+* open search results in a new tab with Shift+Enter / Cmd+Click ([#4](https://github.com/inkless/mdbrowse/issues/4)) ([cc7fb89](https://github.com/inkless/mdbrowse/commit/cc7fb89f7d190b0d8cc06a26344290f34bed17cd))
+
+
+### Bug Fixes
+
+* use cmd/ctrl+enter to open search result in a new tab ([#6](https://github.com/inkless/mdbrowse/issues/6)) ([94ed892](https://github.com/inkless/mdbrowse/commit/94ed8927a270bd89731b2d92f18e462d11d80d84))
+
 ## [0.2.5](https://github.com/inkless/mdbrowse/compare/v0.2.4...v0.2.5) (2026-05-10)
 
 
