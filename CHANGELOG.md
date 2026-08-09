@@ -2,6 +2,13 @@
 
 All notable changes to `@inkless/mdbrowse` are documented in this file. From 0.2.3 onward this file is maintained automatically by [Release Please](https://github.com/googleapis/release-please) from Conventional Commit messages on `main`. The 0.1.0 → 0.2.2 entries below were backfilled by hand.
 
+## [0.2.7](https://github.com/inkless/mdbrowse/compare/v0.2.6...v0.2.7) (2026-08-09)
+
+
+### Bug Fixes
+
+* improve file search relevance ([#7](https://github.com/inkless/mdbrowse/issues/7)) ([148aa8f](https://github.com/inkless/mdbrowse/commit/148aa8f44ff7787217829a0849c1ad0f12f85c09))
+
 ## [0.2.6](https://github.com/inkless/mdbrowse/compare/v0.2.5...v0.2.6) (2026-06-09)
 
 
