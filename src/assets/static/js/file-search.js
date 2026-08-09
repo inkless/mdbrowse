@@ -165,17 +165,30 @@
   }
 
   /**
-   * fzf-style subsequence match against the full path. Empty query
-   * returns the first `limit` entries unchanged.
+   * Rank filename and contiguous path matches ahead of fuzzy subsequences.
+   * Space-separated terms are ANDed so a query such as "acdc experiment"
+   * can combine a project path with a filename. Empty queries return the
+   * first `limit` entries unchanged.
    */
   function filter(all, query, limit) {
-    if (!query) return all.slice(0, limit);
-    var q = query.toLowerCase();
+    var q = query.trim().toLowerCase();
+    if (!q) return all.slice(0, limit);
+    var terms = q.split(/\s+/);
     var scored = [];
     for (var i = 0; i < all.length; i++) {
       var entry = all[i];
-      var s = score(entry.path.toLowerCase(), q, entry.name.length);
-      if (s > -Infinity) scored.push({ entry: entry, score: s });
+      var path = entry.path.toLowerCase();
+      var total = 0;
+      var matched = true;
+      for (var t = 0; t < terms.length; t++) {
+        var termScore = score(path, terms[t], entry.name.length);
+        if (termScore === -Infinity) {
+          matched = false;
+          break;
+        }
+        total += termScore;
+      }
+      if (matched) scored.push({ entry: entry, score: total });
     }
     scored.sort(function (a, b) {
       if (b.score !== a.score) return b.score - a.score;
@@ -187,10 +200,9 @@
   }
 
   /**
-   * Subsequence score. Returns -Infinity when `q` is not a subsequence of
-   * `path`. Otherwise: bonus 5 per query char that lands in the basename
-   * (the trailing `basenameLen` chars of `path`); penalty 1 per gap
-   * between matched characters. Higher is better.
+   * Match score for one query term. Exact basename, basename-prefix, and
+   * contiguous path matches form descending relevance tiers. A subsequence
+   * score remains as the fallback within and below those tiers.
    *
    * Exported on `window.__mdbrowseSearch` so unit tests in node can pull
    * the same implementation via JSDOM if we ever want to.
@@ -199,10 +211,14 @@
     var pi = 0,
       qi = 0,
       gaps = 0,
-      bonus = 0;
+      basenameBonus = 0,
+      consecutiveBonus = 0,
+      previousMatch = -2;
     while (pi < path.length && qi < q.length) {
       if (path[pi] === q[qi]) {
-        if (pi >= path.length - basenameLen) bonus += 5;
+        if (pi >= path.length - basenameLen) basenameBonus += 5;
+        if (pi === previousMatch + 1) consecutiveBonus += 3;
+        previousMatch = pi;
         qi++;
       } else {
         gaps++;
@@ -210,7 +226,25 @@
       pi++;
     }
     if (qi !== q.length) return -Infinity;
-    return bonus - gaps;
+
+    var basename = path.slice(path.length - basenameLen);
+    var extensionStart = basename.lastIndexOf(".");
+    var stem = extensionStart > 0 ? basename.slice(0, extensionStart) : basename;
+    var relevance = 0;
+    if (basename === q) relevance = 1600;
+    else if (stem === q) relevance = 1500;
+    else if (basename.indexOf(q) === 0) relevance = 1300;
+    else if (basename.indexOf(q) !== -1) relevance = 1100;
+    else {
+      var contiguousAt = path.indexOf(q);
+      if (contiguousAt !== -1) {
+        var previous = contiguousAt > 0 ? path[contiguousAt - 1] : "/";
+        var atBoundary = previous === "/" || previous === "-" || previous === "_" || previous === ".";
+        relevance = atBoundary ? 700 : 600;
+      }
+    }
+
+    return relevance + basenameBonus + consecutiveBonus - gaps;
   }
 
   // Expose for tests.

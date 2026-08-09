@@ -23,6 +23,54 @@ test.describe("file search", () => {
     await expect(first).toHaveAttribute("data-path", "/runbooks/deploy.md");
   });
 
+  test("ranks contiguous project and filename matches ahead of scattered subsequences", async ({
+    page,
+  }) => {
+    await page.goto("/README.md");
+
+    const results = await page.evaluate(() => {
+      const search = (
+        globalThis as typeof globalThis & {
+          __mdbrowseSearch: {
+            filter: (
+              entries: { path: string; name: string }[],
+              query: string,
+              limit: number,
+            ) => { path: string; name: string }[];
+          };
+        }
+      ).__mdbrowseSearch;
+      const entries = [
+        {
+          path: "/projects/atom-checkout-funnel/decisions.md",
+          name: "decisions.md",
+        },
+        {
+          path: "/projects/web-parity/acdc-hub/README.md",
+          name: "README.md",
+        },
+        {
+          path: "/projects/web-parity/acdc-hub/specs/ACDC-15-experimentation.md",
+          name: "ACDC-15-experimentation.md",
+        },
+      ];
+
+      return {
+        acdc: search.filter(entries, "acdc", 10).map((entry) => entry.path),
+        combined: search.filter(entries, "acdc experiment", 10).map((entry) => entry.path),
+      };
+    });
+
+    expect(results.acdc).toEqual([
+      "/projects/web-parity/acdc-hub/specs/ACDC-15-experimentation.md",
+      "/projects/web-parity/acdc-hub/README.md",
+      "/projects/atom-checkout-funnel/decisions.md",
+    ]);
+    expect(results.combined).toEqual([
+      "/projects/web-parity/acdc-hub/specs/ACDC-15-experimentation.md",
+    ]);
+  });
+
   test("Enter navigates to the selected file", async ({ page }) => {
     await page.goto("/README.md");
     await page.keyboard.press("Meta+K");
