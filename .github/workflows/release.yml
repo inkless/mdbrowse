@@ -53,7 +53,7 @@ jobs:
         (needs.release-please.result == 'success' && needs.release-please.outputs.release_created == 'true')
         || github.event_name == 'workflow_dispatch'
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write # for npm provenance
