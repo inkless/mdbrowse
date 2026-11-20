@@ -2,6 +2,14 @@
 
 All notable changes to `@inkless/mdbrowse` are documented in this file. From 0.2.3 onward this file is maintained automatically by [Release Please](https://github.com/googleapis/release-please) from Conventional Commit messages on `main`. The 0.1.0 → 0.2.2 entries below were backfilled by hand.
 
+## [0.2.8](https://github.com/inkless/mdbrowse/compare/v0.2.7...v0.2.8) (2026-11-20)
+
+
+### Bug Fixes
+
+* pin Playwright jobs to Ubuntu 24.04 ([7890849](https://github.com/inkless/mdbrowse/commit/78908497193dfad2fa80aed4249d058bd9148b19))
+* render HTML reports natively with relative assets ([e628df4](https://github.com/inkless/mdbrowse/commit/e628df48b3144382c5dac179674f432dc2f80a5b))
+
 ## [0.2.7](https://github.com/inkless/mdbrowse/compare/v0.2.6...v0.2.7) (2026-08-09)
 
 
