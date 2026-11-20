@@ -38,6 +38,7 @@ The npm package is published as `@inkless/mdbrowse`; the binary it installs on y
 mdbrowse                       # serve cwd; land on ./README.md if present
 mdbrowse docs/guide.md         # serve cwd; land on /docs/guide.md
 mdbrowse docs/                 # serve cwd; land on /docs/ (its README or listing)
+mdbrowse reports/index.html    # render an HTML report directly in the browser
 mdbrowse -p 3000               # custom port (falls back to next free if busy)
 mdbrowse --no-browser          # don't auto-open the browser
 mdbrowse --no-reload           # disable live reload on file changes
@@ -85,6 +86,7 @@ Options:
 - 📄 **GitHub-styled rendering** — heading anchors, GFM tables, strikethrough, autolinking, footnotes, task lists
 - 🎨 **Syntax highlighting** via [shiki](https://shiki.style) with built-in `github-light` and `github-dark` themes (dual-theme via CSS variables, swaps on theme toggle)
 - 🧾 **Browse source files too** — navigate to `.ts`, `.py`, `.go`, `.json`, `.yaml`, `Dockerfile`, etc. and they render in the same chrome with shiki highlighting. Unrecognized text files render as plaintext in the layout; binary files stream raw; `.html` / `.svg` keep rendering natively. Pass `--code` to also list source files in the sidebar + ⌘K search.
+- 🌐 **HTML reports** — open `.html` / `.htm` pages directly, with their own styling and scripts, relative assets, and live reload. Browser requests for stylesheets, scripts, images, and data receive the original files.
 - 📦 **GitHub-flavored alerts** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`
 - 🔗 **Issue/PR references** — `#123` (auto-linked when run inside a GitHub repo) and `owner/repo#123`
 - 🧩 **Mermaid diagrams** rendered client-side

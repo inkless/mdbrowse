@@ -65,6 +65,7 @@ const ASSETS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "assets");
 const STATIC_ROOT = join(ASSETS_ROOT, "static");
 
 const MD_RE = /\.(md|markdown)$/i;
+const HTML_RE = /\.html?$/i;
 
 export interface ServerHandle {
   url: string;
@@ -238,6 +239,27 @@ async function handle(
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
     return;
+  }
+
+  if (info.isFile()) {
+    res.setHeader("Vary", "Sec-Fetch-Dest");
+    setNoCacheHeaders(res);
+    // Browser subresources (including fetch() with destination "empty")
+    // need the original bytes rather than the source preview layout.
+    const destination = req.headers["sec-fetch-dest"];
+    if (
+      destination !== undefined &&
+      !["document", "iframe", "frame"].includes(String(destination))
+    ) {
+      return serveFile(res, filePath);
+    }
+    if (HTML_RE.test(filePath)) {
+      const source = await readFile(filePath, "utf8");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(live ? live.injectInto(source) : source);
+      return;
+    }
+    if (/\.svg$/i.test(filePath)) return serveFile(res, filePath);
   }
 
   if (info.isFile() && MD_RE.test(filePath)) {

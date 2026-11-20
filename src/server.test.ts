@@ -12,6 +12,17 @@ beforeAll(async () => {
   tmp = mkdtempSync(join(tmpdir(), "mdbrowse-server-"));
   writeFileSync(join(tmp, "README.md"), "# hello\n\nbody with `#42` and ```js\nconst x = 1\n```\n");
   writeFileSync(join(tmp, "image.txt"), "not markdown");
+  writeFileSync(
+    join(tmp, "report.html"),
+    "<!doctype html><html><body><h1>Report</h1></body></html>",
+  );
+  writeFileSync(
+    join(tmp, "report.HTM"),
+    "<!doctype html><html><body><h1>Report</h1></body></html>",
+  );
+  writeFileSync(join(tmp, "icon.svg"), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+  writeFileSync(join(tmp, "report.css"), "h1 { color: red; }\n");
+  writeFileSync(join(tmp, "report.js"), "document.title = 'Report';\n");
   // Code/config files for the syntax-highlighting fallback path.
   writeFileSync(join(tmp, "sample.ts"), "export const greet = (n: string): string => n;\n");
   writeFileSync(join(tmp, "config.json"), '{\n  "name": "mdbrowse"\n}\n');
@@ -80,6 +91,64 @@ describe("serveMarkdown", () => {
     const baseUrl = handle.url.replace(/README\.md$/, "");
     const res = await fetch(`${baseUrl}does/not/exist.md`);
     expect(res.status).toBe(404);
+  });
+
+  it.each(["report.html", "report.HTM"])("renders %s natively with live reload", async (file) => {
+    const res = await fetch(new URL(file, handle.url));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    const body = await res.text();
+    expect(body).toContain("<h1>Report</h1>");
+    expect(body).toContain("/__mdbrowse_livereload");
+    expect(body).not.toContain('id="file-explorer"');
+    expect(body).not.toContain('id="mdbrowse-source"');
+  });
+
+  it("serves HTML unchanged when live reload is disabled", async () => {
+    const htmlHandle = await serveMarkdown("report.html", {
+      directory: tmp,
+      port: 0,
+      browser: false,
+      reload: false,
+    });
+    try {
+      const res = await fetch(htmlHandle.url);
+      expect(await res.text()).toBe("<!doctype html><html><body><h1>Report</h1></body></html>");
+    } finally {
+      await htmlHandle.close();
+    }
+  });
+
+  it("renders SVG natively", async () => {
+    const res = await fetch(new URL("icon.svg", handle.url));
+    expect(res.headers.get("content-type")).toMatch(/image\/svg\+xml/);
+    expect(await res.text()).toBe('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+  });
+
+  it.each([
+    ["report.css", "style", "text/css", "h1 { color: red; }\n"],
+    ["report.js", "script", "javascript", "document.title = 'Report';\n"],
+    ["config.json", "empty", "application/json", '{\n  "name": "mdbrowse"\n}\n'],
+  ])("serves %s as a browser subresource", async (file, destination, type, source) => {
+    const res = await fetch(new URL(file, handle.url), {
+      headers: { "Sec-Fetch-Dest": destination },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain(type);
+    expect(res.headers.get("vary")).toContain("Sec-Fetch-Dest");
+    expect(await res.text()).toBe(source);
+  });
+
+  it.each([
+    "document",
+    "iframe",
+  ])("keeps source previews for %s navigation", async (destination) => {
+    const res = await fetch(new URL("report.js", handle.url), {
+      headers: { "Sec-Fetch-Dest": destination },
+    });
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain('id="mdbrowse-source"');
   });
 
   it("rejects path traversal attempts", async () => {

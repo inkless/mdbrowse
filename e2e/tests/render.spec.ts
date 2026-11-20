@@ -1,6 +1,18 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("rendering", () => {
+  test("renders an HTML report with relative styles, module scripts, data, and images", async ({
+    page,
+  }) => {
+    await page.goto("/reports/index.html");
+    await expect(page).toHaveTitle("HTML report");
+    await expect(page.locator("h1")).toHaveText("HTML report");
+    await expect(page.locator("h1")).toHaveCSS("color", "rgb(12, 34, 56)");
+    await expect(page.locator("#result")).toHaveText("Report loaded");
+    await expect(page.getByAltText("Report icon")).toHaveJSProperty("naturalWidth", 16);
+    await expect(page.locator("#file-explorer")).toHaveCount(0);
+  });
+
   test("loads README and shows the h1 + page title", async ({ page }) => {
     await page.goto("/README.md");
     await expect(page).toHaveTitle("Sample Project");
